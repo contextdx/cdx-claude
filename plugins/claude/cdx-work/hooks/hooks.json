@@ -1,0 +1,17 @@
+{
+  "description": "ContextDX hooks for session status",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/check-config.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

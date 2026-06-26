@@ -1,0 +1,73 @@
+{
+  "name": "contextdx",
+  "description": "ContextDX plugins for codebase and knowledge architecture analysis, visualization, and sync to ContextDX Portal.",
+  "owner": {
+    "name": "ContextDx",
+    "email": "contact@contextdx.com"
+  },
+  "metadata": {
+    "description": "ContextDX plugins for codebase and knowledge architecture analysis, visualization, and sync to ContextDX Portal.",
+    "version": "0.5.1"
+  },
+  "plugins": [
+    {
+      "name": "cdx-code",
+      "displayName": "Cdx Code",
+      "version": "0.5.1",
+      "source": "./plugins/claude/cdx-code",
+      "description": "Real-time codebase architecture analysis and visualization for ContextDX Portal. Analyzes codebases across multiple languages, detects tech stacks, identifies component relationships, and syncs to ContextDX for collaborative architecture boards. Supports server-defined insight analysis skills.",
+      "author": {
+        "name": "ContextDx",
+        "email": "contact@contextdx.com"
+      },
+      "repository": "https://github.com/contextdx/cdx-claude",
+      "homepage": "https://contextdx.com",
+      "license": "BUSL-1.1",
+      "keywords": [
+        "architecture",
+        "analysis",
+        "c4-diagram",
+        "contextdx",
+        "visualization",
+        "multi-language"
+      ],
+      "category": "code-analysis",
+      "tags": [
+        "architecture",
+        "codebase",
+        "visualization",
+        "portal"
+      ]
+    },
+    {
+      "name": "cdx-work",
+      "displayName": "Cdx Work",
+      "version": "0.5.1",
+      "source": "./plugins/claude/cdx-work",
+      "description": "Knowledge and document architecture analysis for ContextDX Portal. Analyzes a document/knowledge set — specs, RFCs, policies, design docs, wikis — into a graph of concepts, documents, decisions, and their relationships, and syncs to ContextDX for collaborative knowledge boards. Tuned for Claude Cowork. Supports server-defined insight analysis skills.",
+      "author": {
+        "name": "ContextDx",
+        "email": "contact@contextdx.com"
+      },
+      "repository": "https://github.com/contextdx/cdx-claude",
+      "homepage": "https://contextdx.com",
+      "license": "BUSL-1.1",
+      "keywords": [
+        "knowledge",
+        "documentation",
+        "concept-map",
+        "contextdx",
+        "visualization",
+        "knowledge-work"
+      ],
+      "category": "knowledge-management",
+      "tags": [
+        "knowledge",
+        "documents",
+        "visualization",
+        "portal",
+        "cowork"
+      ]
+    }
+  ]
+}
