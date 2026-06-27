@@ -89,17 +89,33 @@ Check the exit code:
 
 For `--all`, fetch each skill's full data one at a time before executing it.
 
+### Step 1.6: Build the deterministic context pack
+
+Run the prepass once to get a precomputed **context pack** — the resolved board universe, per-board context variables, and a flattened element/edge index with **pre-assigned scope keys and board aliases**. Consuming it means you do **not** read every board JSON by hand or mint scope keys/aliases yourself, which is the main source of scope-validation failures on push.
+
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-insights.js --build-context --board-slug <boardSlug> --out .contextdx/insights/context.json --summary
+```
+
+- The summary prints to stdout; read the **full pack** from `.contextdx/insights/context.json`.
+- **Exit 0** → use the pack for Steps 2 (context vars), 5 (scope), and 7 (paths) below.
+- **Exit 1/2 or any error** → fall back to reading `.contextdx/boards/<boardSlug>.json` (+ `manifest.json` + `layerBoardSlug` children) directly and mint keys/aliases by hand, per `references/execution-protocol.md`.
+- **Skip when trivial:** for a single board under ~30 nodes with no manifest/child boards, reading that one board JSON directly is simpler — skip the prepass.
+
+Pack shape: `boards[]` (`{slug, alias, layer, parentBoardSlug, context:{techStacks,languages,archetypes}, nodeCount, edgeCount}`), `scopeBoards[]` (copy-ready `scope.boards` rows), `elements[]` (`{key, board, slug, type, name, description}` — keys ≤12, aliases ≤20, pre-validated; **aliases are the normalized board slug, not short mnemonics**), `edges[]` (`{board, sourceKey, targetKey, type, description}`), `degree[]` (`{key, board, fanIn, fanOut}`, ranked by **combined** fan-in+fan-out, most-connected first), `primaryBoardDefault`, `stats` (`{boardCount, elementCount, edgeCount, droppedEdges, duplicateSlugs, unresolved[]}`). A non-zero `droppedEdges` means some board edges had unresolved endpoints and were omitted — don't assume two nodes are unconnected solely because no `pack.edges` row links them.
+
 ### Step 2: Execute Each Selected Skill
 
 For each skill, follow the execution protocol in `references/execution-protocol.md`:
 
-1. **Read board data** from `.contextdx/boards/<boardSlug>.json` — extract context variables per `references/graph-context.md`. Also read `.contextdx/boards/manifest.json` to discover child/layer boards. For nodes that have a `layerBoardSlug`, read that board's data file too for deeper cross-board context.
+1. **Read the context pack** from `.contextdx/insights/context.json` (Step 1.6) instead of reading board JSONs. The board universe, the skill variables, the element index, and the edge adjacency all come from the pack: skill vars from `pack.boards[]`, the element index from `pack.elements[]`, edges from `pack.edges[]`. (Fallback only — if the pack is unavailable: read `.contextdx/boards/<boardSlug>.json` + `manifest.json` + `layerBoardSlug` children directly per `references/graph-context.md`.)
 1b. **Determine the primary board** — decide which board to use as the top-level `boardSlug` in the payload:
-   - **Default**: use the root board from config (`{{boardSlug}}`)
-   - If `{{userPrompt}}` or the skill's instructions name a domain/component matching a board in the manifest, use that board instead
+   - **Default**: use `pack.primaryBoardDefault` (the board the pack was built for)
+   - If `{{userPrompt}}` or the skill's instructions name a domain/component matching a board in `pack.boards`, use that board instead
    - If findings concentrate on a single child board during analysis, switch to it
+   - When switching, the chosen board must have a row in `pack.scopeBoards` and **not** appear in `pack.stats.unresolved` (a board the pack couldn't load) — pick only from `pack.boards`
    - Store the result as `{{primaryBoardSlug}}` — this replaces `{{boardSlug}}` in the payload and CLI command
-2. **Interpolate skill variables** — replace `{{boardSlug}}`, `{{techStacks}}`, `{{detectedLanguages}}`, `{{nodeArchetypes}}`, `{{focusNodes}}` in the skill's `instructions`
+2. **Interpolate skill variables** — replace `{{boardSlug}}`, `{{techStacks}}`, `{{detectedLanguages}}`, `{{nodeArchetypes}}`, `{{focusNodes}}` in the skill's `instructions`. Source these from the primary board's pack entry: `{{techStacks}}`/`{{detectedLanguages}}`/`{{nodeArchetypes}}` from the `pack.boards[]` entry whose `slug` equals `{{primaryBoardSlug}}` (its `.context`), and `{{focusNodes}}` formatted from `pack.elements` (slug, type, description) for that board
 3. **Inject user focus** — if `{{userPrompt}}` is non-empty, append the following at the end of the interpolated instructions:
    ```
    ## User Analysis Focus
@@ -109,7 +125,11 @@ For each skill, follow the execution protocol in `references/execution-protocol.
 4. **Execute analysis** following the interpolated instructions:
    - Use Read, Glob, Grep to examine source files
    - When instructions say "see `<name>`", read the matching entry from the skill's `references[]` array
-5. **Build scope first** — author the `scope` dictionary before any findings. For each board the analysis touches, add a row to `scope.boards` with a canonical `slug` and a short `alias` (regex `^[a-z0-9_-]+$`, ≤ 20 chars). For each element you'll cite — anchor of a finding, step of a path, target of a suggestion, or relevant context — add a row to `scope.elements` exactly once with a short `key` (regex `^[a-z0-9_-]+$`, ≤ 12 chars), the element's `slug`, the board `alias`, a `role` (`focus` or `context`), and an optional `emphasis` for context elements. Everything else references scope by `key`/`alias`. See [knowledge/insights/references/report-output-format.md](../knowledge/insights/references/report-output-format.md#scope) for the full schema.
+5. **Build scope first (copy from the pack).** Copy `pack.scopeBoards` straight into `scope.boards` (its aliases are the normalized board slugs — copy them verbatim, do **not** shorten to mnemonics like the schema examples). For each element you cite — anchor of a finding, step of a path, target of a suggestion, or relevant context — take its `pack.elements` row and emit `{ key, slug, board }` **verbatim** plus a `role` (`focus` for elements you anchor findings/paths on, `context` for surrounding context) and an optional `emphasis` for context elements (drop `type`/`name`/`description` — they aren't scope fields). Never re-mint keys/aliases or look up which board a slug lives on — the pack already did, and copying verbatim is what makes the payload pass scope validation first try. Rules:
+   - **Cite only what you use** (plus deliberate context) — don't dump the whole index into scope.
+   - **All-or-nothing boards:** every element you cite must have its board's row in `scope.boards`. Copying `pack.scopeBoards` whole satisfies this; never prune a board you still reference.
+   - **Discovered in source?** If you find a component in the source that has **no** row in `pack.elements`, do not invent a key for it — express it as a `GraphSuggestion` with `action: "add"` and `element: null`, never as a cited finding.
+   Everything else references scope by `key`/`alias`. See [knowledge/insights/references/report-output-format.md](../knowledge/insights/references/report-output-format.md#scope) for the full schema. (Fallback only — no pack: mint short `key`/`alias` tokens by hand per that schema.)
 6. **Produce findings** — create `ElementInsight` objects per `references/report-output-format.md`:
    - Required: `id`, `name` (≤ 100), `insight` (5–500), `polarity` (`risk` | `strength` | `opportunity` | `observation`), `priority` (`critical` | `high` | `medium` | `low`), `confidence` (`verified` | `likely` | `inferred` | `speculative`)
    - `element` — ElementKey from `scope.elements`; omit/null for board-wide findings
@@ -118,7 +138,7 @@ For each skill, follow the execution protocol in `references/execution-protocol.
 7. **Trace insight paths** — create `InsightPath` objects for execution flows, blast radius chains, or dependency paths (when the skill calls for it). Paths can span multiple boards via scope:
    - Required: `id`, `title` (≤ 100), `polarity`, `priority`, `defaultBoard` (BoardAlias — the most common board across steps), `steps` (min 2)
    - Each step has `element` (ElementKey), optional `label`, `annotation`, `findingRef` (id of an `ElementInsight` in this analysis — the step inherits its polarity/priority/recommendation), `branches` (recursive sub-steps for non-linear flows)
-   - **Path quality:** Only create paths when tracing connected flows through the graph's edges. Steps must follow actual `edges[]` connections (cross-board transitions are valid via scope). Never repeat the same element key in consecutive steps; an element may reappear later if it plays a genuinely different role.
+   - **Path quality:** Only create paths when tracing connected flows through the graph's edges. Edge-ground every consecutive step pair against `pack.edges` (a real edge within a board; cross-board transitions are valid via scope), and use `pack.degree` (ranked fan-in/fan-out) to find hubs and chokepoints. Set `defaultBoard` to an alias from `pack.scopeBoards`. Never repeat the same element key in consecutive steps; an element may reappear later if it plays a genuinely different role.
 8. **Propose graph suggestions** — create `GraphSuggestion` objects for recommended structural changes (when the skill calls for it):
    - Required: `id`, `action` (`add` | `remove` | `modify`), `targetType` (`node` | `edge` | `container`), `name`, `rationale` (5–500), `polarity`, `priority`
    - Optional: `element` (ElementKey for remove/modify), `fromElement`/`toElement` (ElementKeys for edges), `tags`

@@ -42,7 +42,9 @@ For `--all`, fetch each skill's full data one at a time before executing it.
 
 ### 2. Extract Board Context
 
-Read the board's analysis data from `.contextdx/boards/<boardSlug>.json` and extract skill variables — see [graph-context.md](graph-context.md) for details. Also read `.contextdx/boards/manifest.json` (if it exists) to discover child/layer boards. For nodes that have a `layerBoardSlug`, read that child board's data file too to enable cross-board analysis. Also read any sibling boards discovered from the manifest to enable cross-domain paths.
+**Preferred:** run the context prepass (`cdx-insights.js --build-context --board-slug <boardSlug> --out .contextdx/insights/context.json`) and read the pack. It resolves the board universe (insights mode: root + child subtree + siblings; demo mode `--demo`: start board + direct children only) and emits the skill variables, the keyed element index, the edge adjacency, and a degree table — so you don't read every board JSON or mint scope keys by hand. The manual walk below is the **fallback** when the pack is unavailable.
+
+Fallback — read the board's analysis data from `.contextdx/boards/<boardSlug>.json` and extract skill variables — see [graph-context.md](graph-context.md) for details. Also read `.contextdx/boards/manifest.json` (if it exists) to discover child/layer boards. For nodes that have a `layerBoardSlug`, read that child board's data file too to enable cross-board analysis. Also read any sibling boards discovered from the manifest to enable cross-domain paths.
 
 - `{{boardSlug}}` — the root board slug from config (used as default primary board)
 - `{{primaryBoardSlug}}` — the board slug to use as the top-level primary for this insight (defaults to `{{boardSlug}}`, see Primary Board Selection below)
@@ -107,7 +109,12 @@ References are named markdown documents that provide detailed detection patterns
 
 **Author this first**, before findings/paths/suggestions — everything else references it.
 
-For each board your analysis touches, register an entry in `scope.boards`. For each element you'll cite (anchor of a finding, step of a path, target of a suggestion, or referenced as context), register an entry in `scope.elements` exactly once.
+**From the pack (preferred):** copy `pack.scopeBoards` into `scope.boards` (its aliases are normalized board slugs — copy verbatim, don't shorten to mnemonics like the examples below). For each cited element, emit `{ key, slug, board }` **verbatim** from its `pack.elements` row plus `role`/`emphasis` (drop `type`/`name`/`description`). This is what guarantees the payload passes scope validation on the first try. Three rules:
+- **Cite only what you use** (plus deliberate `context` elements) — do not dump the whole index.
+- **All-or-nothing boards:** every cited element's board must be present in `scope.boards` (copying `pack.scopeBoards` whole satisfies this); never prune a board you still reference.
+- **Discovered in source?** A component you find in the source that has no `pack.elements` row must become a `GraphSuggestion` (`action:"add"`, `element:null`) — never invent a key and cite it.
+
+**By hand (fallback, no pack):** for each board your analysis touches, register an entry in `scope.boards`. For each element you'll cite (anchor of a finding, step of a path, target of a suggestion, or referenced as context), register an entry in `scope.elements` exactly once.
 
 ```json
 {
@@ -224,7 +231,7 @@ Field guide:
 
 #### Path quality rules
 
-- **Edge-grounded** — before building any path, read `edges[]` from the board data. Each consecutive pair of steps should correspond to an actual edge (direct or within 1-2 hops). Do not invent connections that don't exist in the graph. Edge-grounding applies within each board; cross-board transitions are valid when the flow continues across board boundaries.
+- **Edge-grounded** — ground every consecutive step pair against `pack.edges` (fallback: `edges[]` from the board data). Each pair should correspond to an actual edge (direct or within 1-2 hops); use `pack.degree` to locate hubs/chokepoints worth tracing. Do not invent connections that don't exist in the graph. Edge-grounding applies within each board; cross-board transitions are valid when the flow continues across board boundaries.
 - **No consecutive duplicates** — never place the same `element` key in back-to-back steps. An element may reappear later if the flow genuinely revisits it in a different role (with a distinct `label`). If revisits make the path hard to follow, split into separate forward/return paths.
 
 #### Branches example
@@ -363,9 +370,9 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-insights.js --save-insight <path> --board
 
 The CLI runs two validation gates before writing/pushing:
 1. Zod schema (structural validity).
-2. `validateScopeReferences` (every `element`/`fromElement`/`toElement` ElementKey resolves in `scope.elements`; every `defaultBoard` BoardAlias resolves in `scope.boards`; every `findingRef`/`relatedFindings` id matches a finding in this analysis; no `ElementInsight` has both `recommendation` and `context`).
+2. `validateScopeReferences` (every `element`/`fromElement`/`toElement` ElementKey resolves in `scope.elements`; every `scope.elements[].board` and every `defaultBoard` BoardAlias resolves in `scope.boards`; every `findingRef`/`relatedFindings` id matches a finding in this analysis; no `ElementInsight` has both `recommendation` and `context`).
 
-If either fails, the CLI prints `validationErrors[]` and exits with code 3. Fix the payload and retry.
+Self-check before pushing: every `findingRef`/`relatedFindings` id you wrote equals an `insights[].id` in this same payload, and every element key in steps **and `branches`** (which the gate walks recursively) has a `scope.elements` row. If either gate fails, the CLI prints `validationErrors[]` and exits with code 3. Fix the payload and retry.
 
 ### 13. Report Result
 

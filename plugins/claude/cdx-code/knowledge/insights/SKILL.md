@@ -30,6 +30,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-insights.js [mode] [options]
 | `--get-insight-skill <slug>` | _(none)_ | Fetch full skill by slug (instructions + references) |
 | `--save-insight <path>` | `[--push]` | Save insight payload from JSON file; optionally push to server |
 | `--list-insights` | _(none)_ | List locally stored insight skill slugs |
+| `--build-context` | `--board-slug <slug> [--out <path>] [--summary] [--demo]` | Build the deterministic context pack (board universe + keyed element/edge index) for a board |
 
 **Common Options:**
 | Flag | Default | Description |
@@ -41,7 +42,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-insights.js [mode] [options]
 
 **Output:** JSON to stdout with fields: `success`, `skills` or `storedInsights`, `featureAvailable`, `cacheStatus`
 
-**Exit codes:** 0=success, 1=config error, 2=API error
+**Exit codes:** 0=success, 1=config error, 2=board data error (missing/empty/corrupt), 3=API/build error
 
 ## Configuration Source
 
@@ -49,7 +50,7 @@ Scripts read configuration from `.contextdx/config.json`.
 
 ## Local Storage
 
-Insight results are stored per-skill at `.contextdx/boards/insights/<skill-slug>.json`. Skill metadata is cached at `.contextdx/boards/insight-skills-cache.json` with a 1-hour TTL.
+Insight results are stored per-skill at `.contextdx/boards/insights/<skill-slug>.json`. Skill metadata is cached at `.contextdx/boards/insight-skills-cache.json` with a 1-hour TTL. The deterministic context pack (`--build-context --out`) is written to `.contextdx/insights/context.json` and recomputed each run.
 
 ## References
 

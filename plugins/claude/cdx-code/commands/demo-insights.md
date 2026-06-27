@@ -48,23 +48,31 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-insights.js --get-insight-skill <skill-sl
 
 Note each skill's `resultsMode` (`append` vs `replace`) and tell the user — it matters when re-running a demo. (`replace` overwrites the prior run of that skill; `append` adds to it.)
 
-### Step 3: Index the Graph (the source of truth for paths)
+### Step 3: Build the context pack (the source of truth for paths)
 
-Read the chosen board's `.contextdx/boards/<board>.json` (and any `layerBoardSlug` children if a cross-board path is intended). Build two indexes in your head:
-- **nodes**: `slug → {name, type/archetype, description}`
-- **edges**: an adjacency list from `edges[]` (`sourceSlug → targetSlug`, with `type` + `description`)
+Run the prepass in **demo mode** (bounded universe — the target board plus its direct children, no siblings):
 
-Every path step you author must traverse a real edge from this list. Do **not** invent connections. Extract context variables per [knowledge/insights/references/graph-context.md](../knowledge/insights/references/graph-context.md).
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-insights.js --build-context --board-slug <board> --demo --out .contextdx/insights/context.json --summary
+```
+
+Read the full pack from `.contextdx/insights/context.json`. It gives you, without any manual indexing:
+- **node index** — `pack.elements[]` (`{key, board, slug, type, name, description}`), with pre-assigned scope keys
+- **edge adjacency** — `pack.edges[]` (`{board, sourceKey, targetKey, type, description}`) — the source of truth for path grounding
+- **degree** — `pack.degree[]` (`{key, board, fanIn, fanOut}`), ranked most-connected first — your hub/chokepoint shortlist
+- **context vars** — `pack.boards[].context`
+
+Every path step you author must traverse a real edge from `pack.edges`. Do **not** invent connections. (Fallback / skip-when-trivial: on a non-zero exit, or for a single small board, read `.contextdx/boards/<board>.json` directly and index it by hand per [knowledge/insights/references/graph-context.md](../knowledge/insights/references/graph-context.md).)
 
 ### Step 4: Author One Demonstrative Insight per Skill
 
 For each chosen skill, build a single push payload following the recipe in `references/path-recipes.md` and the schema in `report-output-format.md`:
 
-1. **Scope first.** Register the target board(s) in `scope.boards` (short alias) and every cited node in `scope.elements` exactly once (short `key`, `slug`, board alias, `role` = `focus`/`context`).
+1. **Scope first (copy from the pack).** Copy `pack.scopeBoards` into `scope.boards`. For every node you cite, copy its row from `pack.elements` into `scope.elements` keeping the pre-assigned `key` and `board` verbatim, adding `role` (`focus`/`context`). Cite only what you use; never re-mint keys. Anything you spot in source that has no row in `pack.elements` belongs in a `GraphSuggestion` (`action: "add"`, `element: null`), not a cited finding.
 2. **1–3 findings.** Just enough to anchor the path — each path's key step should carry a `findingRef`. Use `recommendation` for `risk`/`opportunity`, `context` for `observation`/`strength` (never both).
 3. **At least one multi-node path** — this is the point of the command:
    - 3–6 nodes on the main line; every consecutive pair backed by a real edge.
-   - Prefer a **branching fan-out** (`branches[]`) on a high-degree node — it reads as a hub on the board and is the most visually compelling.
+   - Prefer a **branching fan-out** (`branches[]`) on a high-degree node — pick it straight from the top of `pack.degree` (highest fan-in/fan-out); it reads as a hub on the board and is the most visually compelling.
    - Never repeat an element key in consecutive steps.
    - Set `defaultBoard` to the alias most steps belong to.
 4. **Optional: one suggestion** (`add`/`modify`/`remove`) to show structural proposals render.

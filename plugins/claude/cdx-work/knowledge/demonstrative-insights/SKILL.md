@@ -47,8 +47,8 @@ If a focus prompt names a concern (security, performance, cost), include that sk
 
 ## Building a path (the checklist)
 
-- **Scope before steps.** Register every node you'll cite in `scope.elements` once, with a short `key`. Paths/findings reference keys, never raw slugs.
-- **Pick the hub from the graph.** Compute fan-in (inbound edge count) and fan-out (outbound) from `edges[]`. The node with the highest degree is your branch point for a fan-out path; a node with high fan-in is your chokepoint for a hidden-dependency path.
+- **Scope before steps.** Copy each node you cite from `pack.elements` into `scope.elements` once, keeping its pre-assigned `key`/`board` verbatim. Paths/findings reference keys, never raw slugs. (The pack comes from `cdx-insights.js --build-context --demo` — see [the command](../../commands/demo-insights.md) Step 3.)
+- **Pick the hub from the graph.** Read fan-in/fan-out straight from `pack.degree` (ranked most-connected first). The top node is your branch point for a fan-out path; a node with high `fanIn` is your chokepoint for a hidden-dependency path.
 - **Main line: 3–6 nodes**, each consecutive pair a real edge. Direction can follow or reverse an edge — what matters is that the edge exists.
 - **Branches for fan-out.** Attach `branches[]` to the hub step, one branch per dependent — each branch element must also share a real edge with the hub.
 - **No consecutive duplicates.** An element may reappear later in a genuinely different role (distinct `label`), never back-to-back.

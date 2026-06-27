@@ -1,6 +1,6 @@
 # Path Recipes
 
-Three reusable, archetype-agnostic recipes for demonstrative paths. Each maps a graph signal → a path shape → a polarity. Pick nodes by computing degree from the board's `edges[]`; the worked examples use the React monorepo root board (`master`), but the heuristics apply to any board.
+Three reusable, archetype-agnostic recipes for demonstrative paths. Each maps a graph signal → a path shape → a polarity. Pick nodes from `pack.degree` (ranked fan-in/fan-out) and ground every step pair on `pack.edges`; the worked examples use the React monorepo root board (`master`), but the heuristics apply to any board.
 
 A note on the examples: they assume `scope.boards` has the target board aliased as `ovw`, and use short element keys (`recon`, `sched`, …) registered in `scope.elements`.
 
@@ -46,7 +46,7 @@ kernel ──▶ SPOF hub ──▶ primary dependent ──▶ downstream degra
 ```
 
 **How to pick nodes:**
-1. Rank nodes by inbound edge count. The top one is the SPOF hub; anchor a `critical` risk finding on it.
+1. Scan `pack.degree` for the node with the highest `fanIn` (the rows are ranked by combined fan-in+fan-out, so the SPOF may not be row 1 — sort by `fanIn` yourself). That node is the SPOF hub; anchor a `critical` risk finding on it.
 2. If the hub itself depends on a lower node (e.g. a shared kernel), make that the root (Ring 0) — anchor a second risk finding there.
 3. Put all the hub's other dependents in `branches[]` (Ring 1) — one branch each, labelled with how they fail.
 4. Continue the main line through one dependent to something it in turn affects (Ring 2 degradation).
@@ -72,7 +72,7 @@ caller ──▶ chokepoint
 ```
 
 **How to pick nodes:**
-1. Find the node with anomalous fan-in for its type (a small/utility package with many dependents).
+1. Scan `pack.degree` for a node with anomalous `fanIn` for its type (a small/utility package with many dependents).
 2. Make one dependent the main entry step, the chokepoint the second step (anchor the finding here), and the remaining dependents branches.
 3. For a contrasting second path, trace a long thin chain (A → B → hub) into a node with the highest fan-in overall and branch out its dependents — the "universal hub" observation.
 
