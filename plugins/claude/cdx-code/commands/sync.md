@@ -51,7 +51,7 @@ Read `.contextdx/config.json` and extract ContextDX credentials:
 - `branch`: Git branch name for sync
 - `boardSlug`: Root board slug
 
-If configuration is missing or `boardSlug` is not set, instruct the user to run `/configure` first.
+If configuration is missing or `boardSlug` is not set, instruct the user to run `/login` (browser) or `/configure` (manual) first.
 
 ### Step 2: Load Board Manifest
 
@@ -160,6 +160,8 @@ The CLI outputs JSON to stdout:
   "errorCode": 1
 }
 ```
+
+If the JSON has `"errorType": "auth_invalid"`, the credentials were rejected (revoked binding or rotated secret) — tell the user to run `/login` to reconnect (or re-check `/configure`), rather than reporting a generic API error.
 
 ### Step 6: Report Results
 

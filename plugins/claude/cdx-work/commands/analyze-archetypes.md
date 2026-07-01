@@ -29,7 +29,7 @@ After this command finishes (and any submitted proposals are approved), `/analyz
 
 ### Step 0: Configuration check
 
-Verify `.contextdx/config.json` exists. If not, instruct the user to run `/configure` first and exit.
+Verify `.contextdx/config.json` exists. If not, instruct the user to run `/login` (browser) or `/configure` (manual) first and exit.
 
 ### Step 1: Pull fresh archetype catalogue
 

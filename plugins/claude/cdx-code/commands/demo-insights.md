@@ -21,9 +21,9 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-insights.js --list-insight-skills --board
 ```
 
 Handle the result exactly as `/insights` does:
-- **Exit 1** → "ContextDX not configured — run `/configure` first" and stop
+- **Exit 1** → "ContextDX not configured — run `/login` (browser) or `/configure` (manual) first" and stop
 - **Exit 2** → "No board data found — run `/analyze` first" and stop
-- **Exit 3** → report the API `error` field and stop
+- **Exit 3** → report the API `error` field and stop (if `errorType` is `auth_invalid`, credentials were rejected — run `/login` to reconnect)
 - `featureAvailable: false` → "No insight skills available for this account" and stop
 - empty `skills` → "No insight skills configured — contact your workspace admin" and stop
 
@@ -53,10 +53,10 @@ Note each skill's `resultsMode` (`append` vs `replace`) and tell the user — it
 Run the prepass in **demo mode** (bounded universe — the target board plus its direct children, no siblings):
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-insights.js --build-context --board-slug <board> --demo --out .contextdx/insights/context.json --summary
+node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-insights.js --build-context --board-slug <board> --demo --out .contextdx/insights/<board>.context.json --summary
 ```
 
-Read the full pack from `.contextdx/insights/context.json`. It gives you, without any manual indexing:
+Read the full pack from `.contextdx/insights/<board>.context.json` (the canonical path `--save-insight --demo` reads for its quality gates). It gives you, without any manual indexing:
 - **node index** — `pack.elements[]` (`{key, board, slug, type, name, description}`), with pre-assigned scope keys
 - **edge adjacency** — `pack.edges[]` (`{board, sourceKey, targetKey, type, description}`) — the source of truth for path grounding
 - **degree** — `pack.degree[]` (`{key, board, fanIn, fanOut}`), ranked most-connected first — your hub/chokepoint shortlist
@@ -84,10 +84,10 @@ For each chosen skill, build a single push payload following the recipe in `refe
 Write each payload to a temp file and push:
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-insights.js --save-insight /tmp/demo-insight-<slug>.json --board-slug <board> --push
+node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-insights.js --save-insight /tmp/demo-insight-<slug>.json --board-slug <board> --demo --require-pack --push
 ```
 
-The CLI runs Zod validation + `validateScopeReferences` (every ElementKey/BoardAlias/findingRef must resolve; `recommendation`/`context` are mutually exclusive). On **exit 3**, read `validationErrors[]`, fix the payload, rewrite the temp file, and retry.
+Pass **`--demo`** so the demo quality gates apply: every payload must have ≥1 path with ≥3 connected nodes, and every same-board path step pair must be **edge-grounded** against the pack (these are HARD for demo — `validationErrors[]` + exit 3). Also runs Zod + `validateScopeReferences` (ElementKey/BoardAlias/findingRef resolve; unique ids; no consecutive-duplicate steps; `recommendation`/`context` mutually exclusive) and the pack gates (cited elements exist in the pack). On **exit 3**, read `validationErrors[]`, fix the payload, rewrite the temp file, and retry. `warnings[]` (exit 0) are non-blocking — review once, don't loop.
 
 ### Step 6: Summary
 

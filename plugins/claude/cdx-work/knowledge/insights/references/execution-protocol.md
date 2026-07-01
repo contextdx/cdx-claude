@@ -42,7 +42,7 @@ For `--all`, fetch each skill's full data one at a time before executing it.
 
 ### 2. Extract Board Context
 
-**Preferred:** run the context prepass (`cdx-insights.js --build-context --board-slug <boardSlug> --out .contextdx/insights/context.json`) and read the pack. It resolves the board universe (insights mode: root + child subtree + siblings; demo mode `--demo`: start board + direct children only) and emits the skill variables, the keyed element index, the edge adjacency, and a degree table — so you don't read every board JSON or mint scope keys by hand. The manual walk below is the **fallback** when the pack is unavailable.
+**Preferred:** run the context prepass (`cdx-insights.js --build-context --board-slug <boardSlug> --out .contextdx/insights/<boardSlug>.context.json`) and read the pack. This canonical path is also what `--save-insight` loads as the oracle for its quality gates. It resolves the board universe (insights mode: root + child subtree + siblings; demo mode `--demo`: start board + direct children only) and emits the skill variables, the keyed element index, the edge adjacency, and a degree table — so you don't read every board JSON or mint scope keys by hand. The manual walk below is the **fallback** when the pack is unavailable.
 
 Fallback — read the board's analysis data from `.contextdx/boards/<boardSlug>.json` and extract skill variables — see [graph-context.md](graph-context.md) for details. Also read `.contextdx/boards/manifest.json` (if it exists) to discover child/layer boards. For nodes that have a `layerBoardSlug`, read that child board's data file too to enable cross-board analysis. Also read any sibling boards discovered from the manifest to enable cross-domain paths.
 
@@ -368,11 +368,14 @@ Write to a temp file, then:
 node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-insights.js --save-insight <path> --board-slug <primaryBoardSlug> --push
 ```
 
-The CLI runs two validation gates before writing/pushing:
+The CLI runs three validation gates before writing/pushing:
 1. Zod schema (structural validity).
-2. `validateScopeReferences` (every `element`/`fromElement`/`toElement` ElementKey resolves in `scope.elements`; every `scope.elements[].board` and every `defaultBoard` BoardAlias resolves in `scope.boards`; every `findingRef`/`relatedFindings` id matches a finding in this analysis; no `ElementInsight` has both `recommendation` and `context`).
+2. `validateScopeReferences` (every `element`/`fromElement`/`toElement` ElementKey resolves in `scope.elements`; every `scope.elements[].board` and every `defaultBoard` BoardAlias resolves in `scope.boards`; every `findingRef`/`relatedFindings` id matches a finding; **unique ids**; **no self-reference**; **no consecutive-duplicate path steps**; **finite measurement values**; no `ElementInsight` has both `recommendation` and `context`).
+3. `validateInsightContent` against the context pack (when present): every cited `scope.elements` `{slug,board}` **exists in the pack**; the primary board is not in `pack.stats.unresolved`; same-board path step pairs are **edge-grounded** against `pack.edges` (HARD for `/demo-insights`, a warning for `/insights`).
 
-Self-check before pushing: every `findingRef`/`relatedFindings` id you wrote equals an `insights[].id` in this same payload, and every element key in steps **and `branches`** (which the gate walks recursively) has a `scope.elements` row. If either gate fails, the CLI prints `validationErrors[]` and exits with code 3. Fix the payload and retry.
+Two channels: **`validationErrors[]` + exit 3** is blocking — fix the listed fields and retry (errors carry a JSON path, the bad value, and the fix; copy any "did you mean" pack row verbatim). **`warnings[]` + exit 0** is non-blocking and already saved — review once (unbacked `verified`, unreferenced scope rows, ungrounded `/insights` paths) and improve if cheap, but **do not loop** on warnings.
+
+Self-check before pushing: every `findingRef`/`relatedFindings` id equals an `insights[].id`; every element key in steps **and `branches`** (walked recursively) has a `scope.elements` row; cited rows were copied from the pack.
 
 ### 13. Report Result
 

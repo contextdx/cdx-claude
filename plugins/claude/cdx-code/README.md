@@ -19,7 +19,11 @@ Restart Claude Code so the commands load. Scope the install with `--scope user` 
 
 ## Configure
 
-Get a **Binding Token** and **API Secret** from the ContextDX Portal (**Sources → Add Source → Board Builder** — saving generates the secret), then create `.contextdx/config.json` at your repo root:
+Two ways to connect this repo to a board — both write the same `.contextdx/config.json`:
+
+**Browser login (fastest):** run `/login`. It signs you in through the ContextDX portal, lets you pick a workspace and a board that already has a Code Plugin binding, and writes the config for you — no tokens to copy. Use `/configure`'s "change board" option later to switch boards the same way.
+
+**Manual:** get a **Binding Token** and **API Secret** from the ContextDX Portal (**Sources → Add Source → Board Builder** — saving generates the secret), then create `.contextdx/config.json` at your repo root:
 
 ```json
 {
@@ -44,11 +48,13 @@ Get a **Binding Token** and **API Secret** from the ContextDX Portal (**Sources 
 
 Run `/configure` to validate the config, test the connection, and add `.contextdx/` to your `.gitignore`. Credentials live only in this file — never logged, and sent only to `api.contextdx.com`.
 
+> **Testing against a non-production server:** set `CONTEXTDX_BASE_URL` (or pass `--base-url` to the CLI scripts) to point every command — including `/login`'s device handshake — at a staging or local API. The browser login and app URLs then follow from that server's configuration, so nothing is pinned to production. `baseUrl` in `.contextdx/config.json` overrides it per repo.
+
 ## Quick start
 
 The plugin uses a **two-phase workflow**: first settle the archetype vocabulary, then describe the system.
 
-1. `/configure` — connect to the portal (one-time per repo)
+1. `/login` (browser) or `/configure` (manual) — connect to the portal (one-time per repo)
 2. `/analyze-archetypes` — **Phase 1**: scan for component categories, surface gaps in the server archetype catalogue, submit proposals for admin review
 3. `/analyze` — **Phase 2**: full architecture analysis (incremental — only changed files re-analyzed)
 4. `/sync` — push the analysis to your board
@@ -77,7 +83,8 @@ Polyglot projects produce a unified board with cross-language relationships (HTT
 
 | Command | Description |
 |---|---|
-| `/configure` | Set up portal credentials and preferences |
+| `/login` | Browser sign-in: pick a workspace + bound board, writes config automatically |
+| `/configure` | Set up portal credentials manually, or switch to a different board |
 | `/analyze-archetypes` | Phase 1 — scan for archetype gaps, submit proposals if needed |
 | `/analyze-archetypes --dry-run` | Validate scan locally + ask server to dry-run, don't persist or POST |
 | `/analyze-archetypes --skip-submit` | Write the proposals file for manual review; don't POST |

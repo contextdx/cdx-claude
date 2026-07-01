@@ -17,9 +17,9 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-insights.js --list-insight-skills --board
 ```
 
 Check the exit code and JSON output:
-- **Exit code 1** → stop and tell the user: "ContextDX not configured — run `/configure` first"
+- **Exit code 1** → stop and tell the user: "ContextDX not configured — run `/login` (browser) or `/configure` (manual) first"
 - **Exit code 2** → stop and tell the user: "No board data found — run `/analyze` first to build your architecture graph"
-- **Exit code 3** → stop and report the API error from the JSON `error` field
+- **Exit code 3** → stop and report the API error from the JSON `error` field. If the JSON `errorType` is `auth_invalid`, the credentials were rejected (revoked binding or rotated secret) — tell the user to run `/login` to reconnect (or re-check `/configure`).
 - If `featureAvailable` is `false` → stop and tell the user: "No insight skills available for this account"
 - If `skills` is empty → stop and tell the user: "No insight skills configured — contact your workspace admin"
 
@@ -83,8 +83,8 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-insights.js --get-insight-skill <skill-sl
 ```
 
 Check the exit code:
-- **Exit code 1** → configuration error, stop
-- **Exit code 3** → skill not found or API error, skip this skill and report the error
+- **Exit code 1** → configuration error — run `/login` or `/configure`; stop
+- **Exit code 3** → skill not found or API error, skip this skill and report the error (if `errorType` is `auth_invalid`, credentials were rejected — run `/login`)
 - On success, the output contains the `skill` object with `instructions` and `references[]` to use in execution
 
 For `--all`, fetch each skill's full data one at a time before executing it.
@@ -94,10 +94,10 @@ For `--all`, fetch each skill's full data one at a time before executing it.
 Run the prepass once to get a precomputed **context pack** — the resolved board universe, per-board context variables, and a flattened element/edge index with **pre-assigned scope keys and board aliases**. Consuming it means you do **not** read every board JSON by hand or mint scope keys/aliases yourself, which is the main source of scope-validation failures on push.
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-insights.js --build-context --board-slug <boardSlug> --out .contextdx/insights/context.json --summary
+node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-insights.js --build-context --board-slug <boardSlug> --out .contextdx/insights/<boardSlug>.context.json --summary
 ```
 
-- The summary prints to stdout; read the **full pack** from `.contextdx/insights/context.json`.
+- The summary prints to stdout; read the **full pack** from `.contextdx/insights/<boardSlug>.context.json`. This canonical path is where `--save-insight` looks for the oracle when it runs the quality gates (Step 2.11). If you switch the primary board later, rebuild the pack for that board too.
 - **Exit 0** → use the pack for Steps 2 (context vars), 5 (scope), and 7 (paths) below.
 - **Exit 1/2 or any error** → fall back to reading `.contextdx/boards/<boardSlug>.json` (+ `manifest.json` + `layerBoardSlug` children) directly and mint keys/aliases by hand, per `references/execution-protocol.md`.
 - **Skip when trivial:** for a single board under ~30 nodes with no manifest/child boards, reading that one board JSON directly is simpler — skip the prepass.
@@ -108,7 +108,7 @@ Pack shape: `boards[]` (`{slug, alias, layer, parentBoardSlug, context:{techStac
 
 For each skill, follow the execution protocol in `references/execution-protocol.md`:
 
-1. **Read the context pack** from `.contextdx/insights/context.json` (Step 1.6) instead of reading board JSONs. The board universe, the skill variables, the element index, and the edge adjacency all come from the pack: skill vars from `pack.boards[]`, the element index from `pack.elements[]`, edges from `pack.edges[]`. (Fallback only — if the pack is unavailable: read `.contextdx/boards/<boardSlug>.json` + `manifest.json` + `layerBoardSlug` children directly per `references/graph-context.md`.)
+1. **Read the context pack** from `.contextdx/insights/<boardSlug>.context.json` (Step 1.6) instead of reading board JSONs. The board universe, the skill variables, the element index, and the edge adjacency all come from the pack: skill vars from `pack.boards[]`, the element index from `pack.elements[]`, edges from `pack.edges[]`. (Fallback only — if the pack is unavailable: read `.contextdx/boards/<boardSlug>.json` + `manifest.json` + `layerBoardSlug` children directly per `references/graph-context.md`.)
 1b. **Determine the primary board** — decide which board to use as the top-level `boardSlug` in the payload:
    - **Default**: use `pack.primaryBoardDefault` (the board the pack was built for)
    - If `{{userPrompt}}` or the skill's instructions name a domain/component matching a board in `pack.boards`, use that board instead
@@ -174,11 +174,13 @@ For each skill, follow the execution protocol in `references/execution-protocol.
      "description": "<summary>"
    }
    ```
-11. **Write to temp file** and save/push:
+11. **Write to temp file** and save/push. **First ensure the pack exists for `{{primaryBoardSlug}}`** — if you switched the primary board away from the one you built the pack for in Step 1.6, rebuild it now (`--build-context --board-slug <primaryBoardSlug> --out .contextdx/insights/<primaryBoardSlug>.context.json`). Then save with `--require-pack` so a missing pack fails loudly instead of silently skipping the pack gates:
    ```bash
-   node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-insights.js --save-insight /tmp/insight-<slug>.json --board-slug <primaryBoardSlug> --push
+   node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-insights.js --save-insight /tmp/insight-<slug>.json --board-slug <primaryBoardSlug> --require-pack --push
    ```
-   The CLI gates the payload through (a) Zod structural validation and (b) `validateScopeReferences` (every ElementKey/BoardAlias/findingRef resolves; recommendation/context mutual exclusion). Failures print `validationErrors[]` and exit code 3 — fix the payload and retry.
+   The CLI gates the payload through (a) Zod structural validation, (b) `validateScopeReferences` (every ElementKey/BoardAlias/findingRef resolves; unique ids; no self-reference; no consecutive-duplicate path steps; finite measurements; recommendation/context mutual exclusion), and (c) `validateInsightContent` against the context pack (every cited element/board exists in the pack; path steps are edge-grounded). Two channels:
+   - **`validationErrors[]` + exit 3 (blocking)** — fix the listed fields and retry. The errors are exact (JSON path + value + fix); for a "did you mean" hint, copy the suggested pack row verbatim.
+   - **`warnings[]` + exit 0 (non-blocking, saved)** — review them once (e.g. unbacked `verified`, unreferenced scope rows, ungrounded `/insights` path). Improve if cheap, but **do not loop** on warnings — they don't block.
 12. **Report result**: pushed to server OR saved locally
 
 ### Step 3: Summary
@@ -193,7 +195,8 @@ After all skills complete, display a summary table:
 
 ## Error Handling
 
-- **No config**: Report "ContextDX not configured — run /configure first"
+- **No config**: Report "ContextDX not configured — run /login (browser) or /configure (manual) first"
+- **Credentials rejected** (`errorType: "auth_invalid"`): Report "Your ContextDX credentials were rejected — run /login to reconnect (or re-check /configure)"
 - **No board data**: Report "No board data found — run /analyze first"
 - **Skill has no instructions**: Skip it and report "Insight skill '<slug>' has no instructions"
 - **Validation errors (exit code 3)**: Read the `validationErrors` array from the JSON output. Fix the payload fields listed in the errors (wrong field names, missing required fields, invalid enum values), rewrite the temp file, and retry the save/push

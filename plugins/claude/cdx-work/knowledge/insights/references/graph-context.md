@@ -2,7 +2,7 @@
 
 This document describes how to extract context from the existing architecture board to inject into InsightSkill instructions.
 
-> **Preferred path:** the context prepass (`cdx-insights.js --build-context`) precomputes all of this — the resolved board universe, the skill variables, the keyed element index, the edge adjacency, and a degree table — into one pack at `.contextdx/insights/context.json`. Consume the pack instead of doing the manual extraction below. What follows describes the underlying board shape and the **fallback** extraction for when the pack is unavailable.
+> **Preferred path:** the context prepass (`cdx-insights.js --build-context`) precomputes all of this — the resolved board universe, the skill variables, the keyed element index, the edge adjacency, and a degree table — into one pack at `.contextdx/insights/<boardSlug>.context.json`. Consume the pack instead of doing the manual extraction below. What follows describes the underlying board shape and the **fallback** extraction for when the pack is unavailable.
 
 ## Board Data Location
 

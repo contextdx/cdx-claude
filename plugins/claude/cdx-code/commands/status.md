@@ -14,7 +14,7 @@ Read `.contextdx/config.json` and report:
 - Branch (configured or not)
 - Exclude paths configured
 
-If not configured, suggest running `/configure`.
+If not configured, suggest running `/login` (browser) or `/configure` (manual).
 
 ### Step 1.5: Archetype Precondition Status
 
@@ -120,7 +120,8 @@ Changed since analysis: 0 files
 ## Missing Components
 
 If any component is missing, provide clear next steps:
-- No configuration -> Run `/configure`
+- No configuration -> Run `/login` (browser) or `/configure` (manual)
+- Credentials rejected (`errorType: "auth_invalid"`) -> Run `/login` to reconnect
 - No archetype precondition -> Run `/analyze-archetypes`
 - No analysis -> Run `/analyze`
 - Not synced -> Run `/sync`

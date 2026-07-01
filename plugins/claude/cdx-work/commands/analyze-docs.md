@@ -174,7 +174,7 @@ If ContextDX configuration exists:
 1. Read `.contextdx/boards/manifest.json` if it exists
 2. If creating a new L0 board:
    - Read `boardSlug` from config (`.contextdx/config.json` → `boardSlug` field)
-   - If config has no `boardSlug`, stop and instruct user to run `/configure` first
+   - If config has no `boardSlug`, stop and instruct user to run `/login` (browser) or `/configure` (manual) first
    - Use the config `boardSlug` as the L0 board slug (this is the root board on the server)
 3. If drilling down, validate that:
    - The parent board exists in the manifest

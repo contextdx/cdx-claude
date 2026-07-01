@@ -61,9 +61,9 @@ if [ ! -f "$CONFIG_FILE" ]; then
     # First run in this project: scaffold a skeleton the user can fill in.
     write_skeleton
     ensure_gitignored
-    output="Created .contextdx/config.json. Add your ContextDX credentials to that file, then run /configure to verify."
+    output="Created .contextdx/config.json. Run /login to connect in your browser, or add your ContextDX credentials to that file manually and run /configure to verify."
 elif ! has_credentials; then
-    output="ContextDX config.json found but credentials are empty. Fill in bindingToken and apiSecret in .contextdx/config.json, then run /configure to verify."
+    output="ContextDX config.json found but credentials are empty. Run /login to connect in your browser, or fill in bindingToken and apiSecret in .contextdx/config.json and run /configure to verify."
 else
     output="ContextDX configuration found."
 

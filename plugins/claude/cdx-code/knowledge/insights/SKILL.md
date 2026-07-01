@@ -50,7 +50,7 @@ Scripts read configuration from `.contextdx/config.json`.
 
 ## Local Storage
 
-Insight results are stored per-skill at `.contextdx/boards/insights/<skill-slug>.json`. Skill metadata is cached at `.contextdx/boards/insight-skills-cache.json` with a 1-hour TTL. The deterministic context pack (`--build-context --out`) is written to `.contextdx/insights/context.json` and recomputed each run.
+Insight results are stored per-skill at `.contextdx/boards/insights/<skill-slug>.json`. Skill metadata is cached at `.contextdx/boards/insight-skills-cache.json` with a 1-hour TTL. The deterministic context pack (`--build-context --out`) is written per board to `.contextdx/insights/<board>.context.json` and recomputed each run; `--save-insight` loads it as the oracle for its quality gates.
 
 ## References
 
