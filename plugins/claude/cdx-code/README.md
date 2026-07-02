@@ -98,6 +98,8 @@ Polyglot projects produce a unified board with cross-language relationships (HTT
 | `/insights` | List available insight skills and run one against the current board |
 | `/insights <skill-slug>` | Run a specific insight skill directly |
 | `/insights --all` | Run every available insight skill |
+| `/intents` | Pull architect-authored intents (work items) for the board and pick one to implement |
+| `/intents <intentId>` | Claim, implement, verify, and resolve a specific intent (write-capable — edits project files) |
 | `/demo-insights [count] [--board <slug>]` | Seed a board with a few demonstrative, path-rich insights to showcase the insights feature |
 | `/status` | Show config state, archetype precondition, analysis summary, and per-board sync status |
 | `/help` | List commands and show the plugin version |
