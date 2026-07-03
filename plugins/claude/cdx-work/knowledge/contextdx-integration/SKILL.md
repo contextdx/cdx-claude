@@ -25,7 +25,7 @@ Store credentials in `.contextdx/config.json`:
 {
   "bindingToken": "YWJjMTIzLXV1aWQ6ZGVmNDU2LXV1aWQ",
   "apiSecret": "ck_cp_live_your_api_secret_here",
-  "baseUrl": "https://api.contextdx.com",
+  "baseUrl": "https://platform.contextdx.com/api",
   "branch": "main",
   "excludePaths": [
     "node_modules",
@@ -118,7 +118,7 @@ Sync state is stored per-board in `.contextdx/boards/stores/<board-slug>.store.j
 | -------------- | -------- | ------------------------- | --------------------------- |
 | `bindingToken` | Yes      | -                         | Combined auth token from UI |
 | `apiSecret`    | Yes      | -                         | API secret (ck_cp_live_xxx format) |
-| `baseUrl`      | No       | https://api.contextdx.com | API endpoint                |
+| `baseUrl`      | No       | https://platform.contextdx.com/api | API endpoint                |
 | `branch`       | Yes      | -                         | Git branch name             |
 | `excludePaths` | No       | []                        | Paths to exclude            |
 | `includeTests` | No       | false                     | Include test files          |

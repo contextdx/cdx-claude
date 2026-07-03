@@ -9,7 +9,7 @@ This document covers the Claude Code Plugin API endpoints.
 ## Base URL
 
 ```
-https://api.contextdx.com
+https://platform.contextdx.com/api
 ```
 
 ## Authentication

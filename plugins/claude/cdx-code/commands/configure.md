@@ -18,7 +18,7 @@ Credentials live in ONE place — the config file, never the chat:
 {
   "bindingToken": "YWJjMTIzLXV1aWQ6ZGVmNDU2LXV1aWQ",
   "apiSecret": "ck_cp_live_xxx",
-  "baseUrl": "https://api.contextdx.com",
+  "baseUrl": "https://platform.contextdx.com/api",
   "branch": "main",
   "boardSlug": "my-project-overview",
   "excludePaths": ["node_modules", "dist", ".git", "coverage"],
@@ -40,7 +40,7 @@ Credentials live in ONE place — the config file, never the chat:
   {
     "bindingToken": "",
     "apiSecret": "",
-    "baseUrl": "https://api.contextdx.com",
+    "baseUrl": "https://platform.contextdx.com/api",
     "branch": "main",
     "boardSlug": "",
     "excludePaths": ["node_modules", "dist", ".git", "coverage"],
@@ -120,10 +120,10 @@ Report configuration complete:
 
 If configuration already exists, ask the user whether to:
 
-- **Switch to a different board (browser)** — re-bind this project to another board without hand-editing credentials. This re-resolves the full credential triple (`bindingToken` + `apiSecret` + `boardSlug`), since a different board is a different binding with its own secret:
-  1. Run `node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --start` and show the user the verification URL + user code (the browser opens best-effort).
-  2. After they sign in, pick the new board, and confirm, run `node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --poll` (give the Bash call ~250s; re-run on `status: "pending"`).
-  3. On `status: "complete"`, the config now points at the newly selected board — confirm the new `boardSlug` with secrets masked.
+- **Switch to a different board (browser)** — re-bind this project to another board without hand-editing credentials. This re-resolves the full credential triple (`bindingToken` + `apiSecret` + `boardSlug`), since a different board is a different binding with its own secret. The `--rebind` flag is what unlocks the board picker — without it, a bound project's login is authentication-only:
+  1. Run `node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --start --rebind` and print the JSON `display` field verbatim (the browser opens best-effort).
+  2. After they sign in, pick the new board, and confirm, run `node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --poll --analyze-cmd analyze` (give the Bash call ~250s; re-run on `status: "pending"`). Print `display` verbatim.
+  3. On `status: "complete"`, the config now points at the newly selected board — the `display` panel already shows it.
 - Update specific fields (have them edit `.contextdx/config.json`, then confirm + re-verify)
 - Re-run verification against the current file
 - Cancel and keep existing

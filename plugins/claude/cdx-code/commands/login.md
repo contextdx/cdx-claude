@@ -3,76 +3,68 @@ description: Sign in to ContextDX in the browser and pick a board (no copy-paste
 allowed-tools: Read, Write, Bash, AskUserQuestion
 ---
 
-Connect this codebase to ContextDX by signing in through the browser, then
-picking a board that already has a binding. The credentials are written straight
-into `.contextdx/config.json` for you — no copying tokens by hand.
+Connect this codebase to ContextDX by signing in through the browser. The
+credentials are written straight into `.contextdx/config.json` for you — no
+copying tokens by hand.
+
+If this project is **already bound to a board** (non-empty `boardSlug` in
+`.contextdx/config.json`), `/login` is authentication-only: the browser just asks
+you to confirm reconnecting to that board, and the board/branch are never
+changed. To switch boards use `/configure`; deleting `.contextdx/config.json`
+starts a fresh full setup.
 
 > Prefer manual setup or running in CI? Use **`/configure`** instead — it stays
 > fully supported and takes `bindingToken`/`apiSecret` directly.
 
 ## Login Workflow
 
+The script's JSON output always includes a `display` field of ready-made
+markdown. **Print `display` verbatim — never reformat, summarise, or rebuild it.**
+Branch only on `status` and the exit code.
+
 ### Step 1: Start the browser login
 
-Run the start phase, which requests a one-time code and (best-effort) opens your
-browser:
+Run the start phase, which requests a one-time code and (best-effort) opens the
+user's default browser:
 
 ```bash
 node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --start
 ```
 
-Parse the JSON output and show the user:
+Print the JSON `display` field verbatim, then wait for the user to finish in
+the browser before continuing.
 
-- The **verification URL** (`verificationUriComplete` if present, else
-  `verificationUri`) — a clickable link.
-- The **user code** (`userCode`) — they may need to enter it on that page.
-- Whether the browser opened automatically (`browserOpened`). If `false`, tell
-  them to open the URL themselves.
-
-Then tell the user: sign in, select the board you want this codebase bound
-to, and confirm. Wait for them before continuing.
+On a non-zero exit, print `display` verbatim and stop.
 
 ### Step 2: Wait for approval
 
-Run the poll phase. It blocks until you finish in the browser (allow it to run
-for a few minutes):
+Run the poll phase. It blocks until the user finishes in the browser (allow it
+to run for a few minutes — give the Bash call a generous timeout, e.g. 250s):
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --poll
+node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --poll --analyze-cmd analyze
 ```
 
-Give the Bash call a generous timeout (e.g. 250s). Inspect the JSON `status`:
+Print the JSON `display` field verbatim. Then, by `status`:
 
-- **`complete`**: credentials were written and a connection test ran — go to
-  Step 3.
-- **`pending`**: you haven't finished in the browser yet. Run the same `--poll`
-  command again to keep waiting (the code is still valid), or re-run `/login` if
-  you closed the tab.
-- On a non-zero exit (denied / expired): tell the user and offer to re-run
-  `/login` from Step 1.
-
-### Step 3: Confirm
-
-On `status: "complete"`, report:
-
-- Config file location (`.contextdx/config.json`) with the API secret masked
-  (`apiSecretMasked`).
-- The bound board (`boardSlug`) and `branch`.
-- The connection test result (`connectionOk`). If `false`, the credentials were
-  written but the test call failed — suggest re-running `/status` or `/login`.
-- Confirm `.contextdx/` is gitignored (`gitignoreUpdated` reports whether the
-  entry was just added; if it was already present, nothing changed).
-
-You're connected — `/analyze` and `/sync` will now work.
+- **`complete`**: done — the `display` panel already confirms the connection
+  and next steps. Nothing more to add.
+- **`pending`**: the user hasn't finished in the browser yet. Run the same
+  `--poll` command again to keep waiting (the code is still valid), or re-run
+  `/login` if they closed the tab.
+- On a non-zero exit (denied / expired / board mismatch): `display` explains
+  what happened — offer to re-run `/login` from Step 1 if appropriate.
 
 ## Notes
 
 - **Where you sign in:** the browser opens the ContextDX app, which sends you to
-  the ContextDX portal login (`https://portal.contextdx.com/login` by default).
-  If your org uses the web app already, this is the same login.
+  the ContextDX portal login. If your org uses the web app already, this is the
+  same login.
 - **Account state:** if your account isn't onboarded, is blocked, or its
   subscription has lapsed, the browser will show the onboarding / access page and
   you won't be able to bind a board — resolve that first, then re-run `/login`.
 - **Local testing / self-hosted:** point the CLI at another API with
-  `CONTEXTDX_BASE_URL` (or `--base-url`); the login and app URLs follow from that
-  server's configuration, so nothing is hardcoded to production.
+  `CONTEXTDX_BASE_URL` (or `--base-url`), e.g. `http://localhost:8081/api` — see
+  the repo's local-testing guide. A successful login pins that URL into
+  `.contextdx/config.json`, so later commands stay on the same server without
+  env vars.

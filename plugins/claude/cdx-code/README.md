@@ -31,7 +31,7 @@ Two ways to connect this repo to a board — both write the same `.contextdx/con
   "apiSecret": "ck_cp_live_your_api_secret",
   "boardSlug": "my-project-overview",
   "branch": "main",
-  "baseUrl": "https://api.contextdx.com"
+  "baseUrl": "https://platform.contextdx.com/api"
 }
 ```
 
@@ -41,12 +41,12 @@ Two ways to connect this repo to a board — both write the same `.contextdx/con
 | `apiSecret` | yes | Must start with `ck_cp_live_`. Sent as `X-CodePlugin-Secret`. |
 | `boardSlug` | yes | Target board. `/configure` can discover and write it for you. |
 | `branch` | yes | Must match the binding, or `/sync` returns `400 Branch Mismatch`. |
-| `baseUrl` | no | Override for self-hosted (default `https://api.contextdx.com`). |
+| `baseUrl` | no | Override for self-hosted (default `https://platform.contextdx.com/api`). |
 | `excludePaths` | no | Paths skipped during analysis (default `node_modules, dist, .git, coverage`). |
 | `includeTests` | no | Include test files in analysis (default `false`). |
 | `includeSourceReferences` | no | Attach file-path references to synced nodes/edges (default `true`). |
 
-Run `/configure` to validate the config, test the connection, and add `.contextdx/` to your `.gitignore`. Credentials live only in this file — never logged, and sent only to `api.contextdx.com`.
+Run `/configure` to validate the config, test the connection, and add `.contextdx/` to your `.gitignore`. Credentials live only in this file — never logged, and sent only to `platform.contextdx.com`.
 
 > **Testing against a non-production server:** set `CONTEXTDX_BASE_URL` (or pass `--base-url` to the CLI scripts) to point every command — including `/login`'s device handshake — at a staging or local API. The browser login and app URLs then follow from that server's configuration, so nothing is pinned to production. `baseUrl` in `.contextdx/config.json` overrides it per repo.
 

@@ -68,13 +68,23 @@ If `analyzedAtCommit` exists:
 
 If `analyzedAtCommit` is missing (old board data), suggest running `/analyze --clean`.
 
+### Step 6: Aspect Adoption Status (code plugin)
+
+List `.contextdx/aspects/*.json` (present only after `/adopt`). Each file is one board+aspect; read it and report per aspect:
+
+- `snapshotAt` + `extractorVersion` — when it was last adopted and with what extractor.
+- `counts`: `inserted` / `updated` / `deleted` / `skippedManual`.
+- **`unlinked`** and **`unresolvedRefs`** — surface these prominently. If either is non-zero, the aspect is partially linked to the spine: report the numbers and suggest re-running `/analyze` + `/sync` (the server's re-resolution pass auto-heals them) or `/adopt` after enriching the spine. If both are zero, report "fully resolved".
+
+If the directory is absent, report "No aspects adopted yet — run `/adopt --db` or `/adopt --api`" (skip silently for the knowledge/work plugin, which has no aspects).
+
 ## Output Format
 
 Display status in organized sections:
 
 ```
 ## Configuration
-Base URL: https://api.contextdx.com
+Base URL: https://platform.contextdx.com/api
 Branch: main
 
 ## Archetypes
