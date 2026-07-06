@@ -1,4 +1,5 @@
 ---
+category: map
 description: Scan the knowledge set for archetype gaps and submit proposals before running full /analyze-docs
 argument-hint: [--dry-run | --skip-submit | --force | --replace]
 allowed-tools: Read, Glob, Grep, Write, Bash(node:*), AskUserQuestion

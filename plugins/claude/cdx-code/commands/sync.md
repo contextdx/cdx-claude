@@ -1,4 +1,5 @@
 ---
+category: map
 description: Sync architecture analysis to ContextDX
 argument-hint: [--board <slug> | --all]
 allowed-tools: Read, Bash(node:*)
@@ -112,56 +113,10 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-sync.js \
 
 ### Step 5: Parse CLI Output
 
-The CLI outputs JSON to stdout:
+The CLI outputs one JSON object to stdout. Branch on `success`:
 
-**Success (smart sync mode):**
-
-```json
-{
-  "success": true,
-  "boardSlug": "my-project-overview",
-  "smartSync": true,
-  "nodeCount": 10,
-  "edgeCount": 15,
-  "diff": {
-    "newNodes": 3,
-    "changedNodes": 2,
-    "unchangedNodes": 5,
-    "serverOnlyNodes": 1,
-    "newEdges": 4,
-    "changedEdges": 1,
-    "unchangedEdges": 10,
-    "serverOnlyEdges": 0
-  },
-  "pushResult": {
-    "nodesCreated": 3,
-    "nodesUpdated": 2,
-    "edgesCreated": 4,
-    "edgesUpdated": 1,
-    "errors": []
-  },
-  "serverPullStatus": "fresh",
-  "timing": {
-    "totalMs": 1234,
-    "pullMs": 456,
-    "diffMs": 12,
-    "pushMs": 766
-  }
-}
-```
-
-**Error:**
-
-```json
-{
-  "success": false,
-  "boardSlug": "my-project-overview",
-  "error": "Configuration file not found",
-  "errorCode": 1
-}
-```
-
-If the JSON has `"errorType": "auth_invalid"`, the credentials were rejected (revoked binding or rotated secret) — tell the user to run `/login` to reconnect (or re-check `/configure`), rather than reporting a generic API error.
+- **`success: true`** — summarise from `pushResult` (`nodesCreated`/`nodesUpdated`/`edgesCreated`/`edgesUpdated`, plus any `pushResult.errors[]`) and, in smart-sync mode, the `diff` counts (`newNodes`/`changedNodes`/`unchangedNodes`, same for edges).
+- **`success: false`** — report the `error` field. If `errorType` is `auth_invalid`, the credentials were rejected (revoked binding or rotated secret) — tell the user to run `/login` to reconnect, rather than reporting a generic API error.
 
 ### Step 6: Report Results
 
@@ -178,19 +133,10 @@ If syncing multiple boards, show a summary at the end, including each board's vi
 
 ## Error Handling
 
-### CLI Exit Codes
+CLI exit codes:
 
 - `0`: Success
-- `1`: Configuration error (missing file, invalid format, missing --board-slug)
-- `2`: Analysis file error (missing or invalid JSON, missing boardSlug in metadata)
-- `3`: Validation error (invalid node/edge structure or archetype mismatch)
-- `4`: API error (auth failure, network error, push errors)
-
-### Claude Code Plugin API Errors
-
-- 400: Bad Request - Invalid payload or branch mismatch
-- 401: Unauthorized - Invalid or missing API credentials
-- 403: Access denied - Check binding permissions
-- 404: Not Found - Binding or board not found
-- 422: Invalid data format - Validate node/edge structure
-- 429: Rate limited - Wait and retry
+- `1`: Configuration error (missing file, invalid format, missing --board-slug) — "ContextDX not configured — run `/login` (browser) or `/configure` (manual) first"
+- `2`: Analysis file error (missing or invalid JSON, missing boardSlug in metadata) — suggest running `/analyze` first
+- `3`: Validation error (invalid node/edge structure or archetype mismatch) — report the JSON `error` detail
+- `4`: API error — report the JSON `error`; the CLI already retries transient failures and maps HTTP errors to messages, so relay its text rather than re-deriving HTTP semantics

@@ -1,4 +1,5 @@
 ---
+category: connect
 description: Configure ContextDX credentials and settings
 allowed-tools: Read, Write, Bash, AskUserQuestion
 ---
@@ -86,9 +87,13 @@ Then use **AskUserQuestion** to confirm completion — for example:
 
 Test the connection using the credentials now in the file:
 
-- Attempt to fetch archetypes from `/code-plugin/archetypes`
-- Report success or failure with an actionable message
-- On failure, point the user back to the specific field in `.contextdx/config.json` to fix, then re-verify
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-archetypes.js --no-cache
+```
+
+- **Exit 0** → connection works; report the archetype count as confirmation.
+- **Exit 1** → config file problem; report the JSON `error` field and point the user at the specific field in `.contextdx/config.json` to fix, then re-verify.
+- **Other non-zero** → API/auth failure; report the JSON `error` field. If `errorType` is `auth_invalid`, the credentials were rejected — have the user re-check `bindingToken`/`apiSecret` (or run `/login`), then re-verify.
 
 ### Step 5: Discover root board
 
@@ -127,3 +132,13 @@ If configuration already exists, ask the user whether to:
 - Update specific fields (have them edit `.contextdx/config.json`, then confirm + re-verify)
 - Re-run verification against the current file
 - Cancel and keep existing
+
+## After configuring — state the next step
+
+When configuration is verified, run the offline status report and relay **only its `Lifecycle:` line** so the user knows the single next command:
+
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-status.js --analyze-cmd analyze-docs
+```
+
+Do not print the whole report here — one line, one next step.

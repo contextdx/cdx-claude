@@ -1,4 +1,5 @@
 ---
+category: connect
 description: Sign in to ContextDX in the browser and pick a board (no copy-paste)
 allowed-tools: Read, Write, Bash, AskUserQuestion
 ---
@@ -68,3 +69,13 @@ Print the JSON `display` field verbatim. Then, by `status`:
   the repo's local-testing guide. A successful login pins that URL into
   `.contextdx/config.json`, so later commands stay on the same server without
   env vars.
+
+## After connecting — state the next step
+
+Once login completes (`status: "complete"`), run the offline status report and relay **only its `Lifecycle:` line** so the user knows the single next command (e.g. `/analyze-archetypes` for an existing document set, or `/build` for an empty repo with compiled skills):
+
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-status.js --analyze-cmd analyze-docs
+```
+
+Do not print the whole report here — one line, one next step.

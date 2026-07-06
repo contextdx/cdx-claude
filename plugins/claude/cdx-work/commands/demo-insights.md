@@ -1,4 +1,5 @@
 ---
+category: map
 description: Generate a few demonstrative, path-rich insights on a board to showcase the insights feature
 argument-hint: "[count] [--board <slug>] [focus prompt]"
 allowed-tools: Read, Glob, Grep, Write, Bash(node:*)

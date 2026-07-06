@@ -1,137 +1,30 @@
 ---
+category: connect
 description: Show ContextDX sync status and analysis summary
-allowed-tools: Read, Bash(git:*)
+allowed-tools: Bash(node:*)
 ---
 
-Display current sync status and analysis summary for ContextDX integration.
+Show the full ContextDX status for this project — configuration, archetype
+precondition, boards (analysis + sync state + changed files), and adopted
+aspects. The script renders the final report itself — your only job is to run
+it and pass its output through.
 
-## Status Check Workflow
+## Workflow
 
-### Step 1: Configuration Status
+1. Run the status script:
 
-Read `.contextdx/config.json` and report:
-- Base URL (configured or not)
-- Branch (configured or not)
-- Exclude paths configured
+   ```bash
+   node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-status.js --analyze-cmd analyze
+   ```
 
-If not configured, suggest running `/login` (browser) or `/configure` (manual).
+2. Print the script's stdout **verbatim** — it is already formatted markdown,
+   including a "Next steps" section. Do not reformat, reorder, summarise, or
+   re-derive any state by reading `.contextdx/` files yourself.
 
-### Step 1.5: Archetype Precondition Status
+3. If the script exits non-zero, print its output verbatim and stop. Do not
+   fabricate status.
 
-Read `.contextdx/archetype-analysis.lock.json` if it exists. Report:
-
-- **No lock file** → "Archetype precondition not yet run. Start with `/analyze-archetypes` to settle the catalogue before `/analyze`."
-- **Lock with `submittedAt: null` and `skippedAt: null`** → "Archetype scan completed on <date>; no gaps. Catalogue is settled at commit `<short-hash>`."
-- **Lock with `skippedAt` set** → "Archetype scan skipped on <date>. Components may have misfit archetypes. Re-run `/analyze-archetypes` after admin reviews the catalogue."
-- **Lock with `submittedAt` set and `proposalIds[]` non-empty**:
-  - Count the IDs: report "N proposals submitted on <date> (awaiting approval)."
-  - List the proposal IDs (truncated to first 8 chars) so the user can correlate with the ContextDX UI.
-  - Suggest: "Re-run `/analyze-archetypes` after admin approval, then `/analyze --clean` to retype affected components."
-- **Lock stale** (commitHash or catalogueHash differs from current): warn "Archetype lock is stale. Re-run `/analyze-archetypes`."
-
-### Step 2: Board Manifest Status
-
-Read `.contextdx/boards/manifest.json` (if it exists) and report:
-- Number of boards
-- For each board: slug, name, layer, last analysis timestamp
-
-If manifest missing, suggest running `/analyze`.
-
-### Step 3: Per-Board Analysis Summary
-
-For each board in the manifest, read `.contextdx/boards/<board-slug>.json` and report:
-- Project name
-- Tech stacks detected
-- Node counts by archetype
-- Edge counts by type
-- Whether this is a child board (and if so, which parent board/node)
-
-### Step 4: Sync Status
-
-For each board, check `.contextdx/boards/stores/<board-slug>.store.json` for sync metadata:
-- Last sync timestamp
-- Sync status (success/failed)
-- Nodes synced (created/updated/unchanged)
-- Edges synced (created/updated/unchanged)
-
-If never synced, suggest running `/sync`.
-
-### Step 5: Changed Files Since Last Analysis
-
-For each board, read the `analyzedAtCommit` hash from `.contextdx/boards/<board-slug>.json` metadata.
-
-If `analyzedAtCommit` exists:
-1. Run `git diff --name-only --diff-filter=ACMR <analyzedAtCommit> HEAD` to find changed/added files since last analysis (includes both committed and uncommitted changes)
-2. Filter to relevant source files (exclude `node_modules/`, `dist/`, `.git/`, `coverage/`, test files)
-3. Report count and list of changed files
-4. If no changes, report "Up to date"
-
-If `analyzedAtCommit` is missing (old board data), suggest running `/analyze --clean`.
-
-### Step 6: Aspect Adoption Status (code plugin)
-
-List `.contextdx/aspects/*.json` (present only after `/adopt`). Each file is one board+aspect; read it and report per aspect:
-
-- `snapshotAt` + `extractorVersion` — when it was last adopted and with what extractor.
-- `counts`: `inserted` / `updated` / `deleted` / `skippedManual`.
-- **`unlinked`** and **`unresolvedRefs`** — surface these prominently. If either is non-zero, the aspect is partially linked to the spine: report the numbers and suggest re-running `/analyze` + `/sync` (the server's re-resolution pass auto-heals them) or `/adopt` after enriching the spine. If both are zero, report "fully resolved".
-
-If the directory is absent, report "No aspects adopted yet — run `/adopt --db` or `/adopt --api`" (skip silently for the knowledge/work plugin, which has no aspects).
-
-## Output Format
-
-Display status in organized sections:
-
-```
-## Configuration
-Base URL: https://platform.contextdx.com/api
-Branch: main
-
-## Archetypes
-Catalogue: 18 archetypes available (last fetched 2026-05-13)
-Last scan: commit a1b2c3d on 2026-05-12
-Pending proposals: 3 submitted on 2026-05-12 (awaiting approval)
-  - 8f3a91…  http_service
-  - 1c4d77…  worker_service
-  - 5e7b22…  lambda_function
-Action: re-run /analyze-archetypes after admin approval, then /analyze --clean
-
-## Boards (2)
-
-### my-project-overview (L0 Overview)
-Last analyzed: 2025-01-25 10:30:00
-Tech stacks: Next.js, NestJS
-
-Nodes:
-  - Services: 12
-  - APIs: 8
-  - Database: 5
-  - Components: 15
-  Total: 40
-
-Edges:
-  - imports: 52
-  - db_read: 12
-  - api_call: 6
-  Total: 70
-
-Sync: success (2025-01-25 10:35:00)
-
-### user-domain (L1 Domain)
-Last analyzed: 2025-01-25 10:32:00
-Parent: my-project-overview / user-service-node
-
-Nodes: 15 | Edges: 22
-Sync: success (2025-01-25 10:36:00)
-
-Changed since analysis: 0 files
-```
-
-## Missing Components
-
-If any component is missing, provide clear next steps:
-- No configuration -> Run `/login` (browser) or `/configure` (manual)
-- Credentials rejected (`errorType: "auth_invalid"`) -> Run `/login` to reconnect
-- No archetype precondition -> Run `/analyze-archetypes`
-- No analysis -> Run `/analyze`
-- Not synced -> Run `/sync`
+The report is offline (local `.contextdx/` state + local git only) — it never
+calls the API, so it cannot verify credentials. If the user asks whether the
+connection actually works, point them to `/login` (browser) or `/configure`
+(manual), which test the connection.

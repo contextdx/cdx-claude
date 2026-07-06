@@ -1,4 +1,5 @@
 ---
+category: build
 description: "Compile this project's ContextDX skills into the repo. WRITE-CAPABLE: writes IDE-native skill files (never overwrites your local edits)."
 argument-hint: [--status]
 allowed-tools: Read, Bash

@@ -1,4 +1,5 @@
 ---
+category: map
 description: Analyze a document/knowledge set into a layered knowledge board
 argument-hint: [--clean | --drill <parent-board-slug>/<node-slug> | --all]
 allowed-tools: Read, Glob, Grep, Write, Bash(node:*)

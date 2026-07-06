@@ -1,4 +1,5 @@
 ---
+category: build
 description: "Pull architect-authored intents for your board and implement them in this project. WRITE-CAPABLE: unlike other cdx commands, this one edits project files (with your approval at each step)"
 argument-hint: [<intentId> | --list]
 allowed-tools: Read, Glob, Grep, Edit, Write, Bash

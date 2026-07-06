@@ -98,11 +98,15 @@ Polyglot projects produce a unified board with cross-language relationships (HTT
 | `/insights` | List available insight skills and run one against the current board |
 | `/insights <skill-slug>` | Run a specific insight skill directly |
 | `/insights --all` | Run every available insight skill |
+| `/skills [--status]` | Compile the platform's skill bundle (specs + guidelines) into the repo — never overwrites local edits |
+| `/build [--plan]` | Build the app from the platform's spec — compiled skills, intents, board design, aspect contracts (write-capable; `--plan` = plan only) |
 | `/intents` | Pull architect-authored intents (work items) for the board and pick one to implement |
 | `/intents <intentId>` | Claim, implement, verify, and resolve a specific intent (write-capable — edits project files) |
 | `/demo-insights [count] [--board <slug>]` | Seed a board with a few demonstrative, path-rich insights to showcase the insights feature |
-| `/status` | Show config state, archetype precondition, analysis summary, and per-board sync status |
-| `/help` | List commands and show the plugin version |
+| `/adopt [--db \| --api]` | Extract a code aspect (database schema / API surface) onto the bound board |
+| `/monitor` · `/monitor setup` | Correlate monitoring signals (errors, logs, cloud costs) with the board and push findings as a draft insight; `setup` configures sources + a recurring run |
+| `/status` | Show the lifecycle dial, config state, archetype precondition, analysis summary, and per-board sync status |
+| `/help` | List commands grouped by lifecycle stage, with the plugin version |
 
 ## Layered boards
 

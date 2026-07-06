@@ -1,4 +1,5 @@
 ---
+category: map
 description: Extract and adopt a code aspect (database schema or API surface) onto the bound board
 argument-hint: "[--db | --api] [--mode replace|merge]"
 allowed-tools: Read, Glob, Grep, Write, Bash(node:*, git:*)

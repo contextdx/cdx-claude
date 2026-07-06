@@ -1,4 +1,5 @@
 ---
+category: map
 description: Analyze codebase architecture with layered board support
 argument-hint: [--clean | --drill <parent-board-slug>/<node-slug> | --all]
 allowed-tools: Read, Glob, Grep, Write, Bash(node:*, git:*)

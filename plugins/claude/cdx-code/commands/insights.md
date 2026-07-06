@@ -1,4 +1,5 @@
 ---
+category: understand
 description: Run server-defined insight analysis on your architecture board
 argument-hint: [<prompt> | --select | --list | --all | <skill-slug>]
 allowed-tools: Read, Glob, Grep, Write, Bash(node:*)

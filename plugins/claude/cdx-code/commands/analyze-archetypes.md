@@ -1,4 +1,5 @@
 ---
+category: map
 description: Analyse the codebase for archetype gaps and submit proposals before running full /analyze
 argument-hint: [--dry-run | --skip-submit | --force | --replace]
 allowed-tools: Read, Glob, Grep, Write, Bash(node:*, git:*), AskUserQuestion
