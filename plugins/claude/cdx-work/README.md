@@ -77,7 +77,7 @@ The plugin uses a **two-phase workflow**: first settle the archetype vocabulary,
 
 If `/analyze-docs` is invoked before `/analyze-archetypes` has run for the current document set + catalogue state, it prompts you to run Phase 1 first.
 
-The operational commands — `/login`, `/configure`, `/status`, `/sync`, `/insights`, `/intents`, `/help`, `/demo-insights` — are **shared** with `cdx-code` and behave identically. Only `/analyze-docs` and `/analyze-archetypes` carry the knowledge-specific analysis brain.
+The operational commands — `/login`, `/configure`, `/status`, `/sync`, `/insights`, `/intents`, `/help`, `/update`, `/demo-insights` — are **shared** with `cdx-code` and behave identically. Only `/analyze-docs` and `/analyze-archetypes` carry the knowledge-specific analysis brain.
 
 ## Commands
 
@@ -102,6 +102,7 @@ The operational commands — `/login`, `/configure`, `/status`, `/sync`, `/insig
 | `/intents <intentId>` | Claim, implement, verify, and resolve a specific intent (write-capable — edits project files) |
 | `/demo-insights [count] [--board <slug>]` | Seed a board with a few demonstrative, path-rich insights to showcase the insights feature |
 | `/status` | Show config state, archetype precondition, analysis summary, and per-board sync status |
+| `/update` | Update this plugin to the latest published version for your host |
 
 ## Layered boards
 

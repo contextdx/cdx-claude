@@ -26,9 +26,17 @@ After this command finishes (and any submitted proposals are approved), `/analyz
 
 ## Workflow
 
-### Step 0: Configuration check
+### Step 0: Configuration and branch check
 
 Verify `.contextdx/config.json` exists. If not, instruct the user to run `/login` (browser) or `/configure` (manual) first and exit.
+
+Then run the branch guard — the binding is pinned to one branch and the server rejects pushes from any other, so scanning the wrong checkout is wasted work:
+
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-precondition.js --branch-only
+```
+
+On exit 1, print the JSON `error` field verbatim and stop (it names the pinned branch, the current branch, and the fix). On exit 0, continue.
 
 ### Step 1: Pull fresh archetype catalogue
 

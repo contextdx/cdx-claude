@@ -136,7 +136,7 @@ If syncing multiple boards, show a summary at the end, including each board's vi
 CLI exit codes:
 
 - `0`: Success
-- `1`: Configuration error (missing file, invalid format, missing --board-slug) — "ContextDX not configured — run `/login` (browser) or `/configure` (manual) first"
+- `1`: Configuration error (missing file, invalid format, missing --board-slug) — "ContextDX not configured — run `/login` (browser) or `/configure` (manual) first". Also used for a **branch mismatch** (current git branch differs from the binding's pinned branch) — relay the `error` field verbatim; it names the fix
 - `2`: Analysis file error (missing or invalid JSON, missing boardSlug in metadata) — suggest running `/analyze-docs` first
 - `3`: Validation error (invalid node/edge structure or archetype mismatch) — report the JSON `error` detail
 - `4`: API error — report the JSON `error`; the CLI already retries transient failures and maps HTTP errors to messages, so relay its text rather than re-deriving HTTP semantics

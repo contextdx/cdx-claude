@@ -107,6 +107,7 @@ Polyglot projects produce a unified board with cross-language relationships (HTT
 | `/monitor` · `/monitor setup` | Correlate monitoring signals (errors, logs, cloud costs) with the board and push findings as a draft insight; `setup` configures sources + a recurring run |
 | `/status` | Show the lifecycle dial, config state, archetype precondition, analysis summary, and per-board sync status |
 | `/help` | List commands grouped by lifecycle stage, with the plugin version |
+| `/update` | Update this plugin to the latest published version for your host |
 
 ## Layered boards
 

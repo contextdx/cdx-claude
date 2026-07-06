@@ -9,10 +9,11 @@ credentials are written straight into `.contextdx/config.json` for you — no
 copying tokens by hand.
 
 If this project is **already bound to a board** (non-empty `boardSlug` in
-`.contextdx/config.json`), `/login` is authentication-only: the browser just asks
-you to confirm reconnecting to that board, and the board/branch are never
-changed. To switch boards use `/configure`; deleting `.contextdx/config.json`
-starts a fresh full setup.
+`.contextdx/config.json`), `/login` asks whether to **reconnect** to that board
+(refresh credentials; board and branch unchanged) or **connect to a different
+workspace/board** for this project. The browser is already signed in, so
+switching is just picking the new board — no repeated login. `/configure` can
+also switch boards; deleting `.contextdx/config.json` starts a fresh full setup.
 
 > Prefer manual setup or running in CI? Use **`/configure`** instead — it stays
 > fully supported and takes `bindingToken`/`apiSecret` directly.
@@ -23,13 +24,28 @@ The script's JSON output always includes a `display` field of ready-made
 markdown. **Print `display` verbatim — never reformat, summarise, or rebuild it.**
 Branch only on `status` and the exit code.
 
+### Step 0: Already bound to a board?
+
+Read `.contextdx/config.json` and choose the Step 1 start flag by its `boardSlug`:
+
+- **Empty or absent** → fresh connection: use `--start` (the browser shows the
+  full workspace/board picker).
+- **Non-empty** → this project is already bound to that board. You're already
+  signed in, so no full re-login is needed — ask with **AskUserQuestion**:
+  - **"Reconnect to `<boardSlug>`"** (refresh credentials; same board and
+    branch) → use `--start`.
+  - **"Connect to a different workspace/board"** (bind this project to another
+    board) → use `--start --rebind`, which unlocks the full picker.
+
+Carry the chosen flag into Step 1.
+
 ### Step 1: Start the browser login
 
-Run the start phase, which requests a one-time code and (best-effort) opens the
-user's default browser:
+Run the start phase with the flag chosen in Step 0. It requests a one-time code
+and (best-effort) opens the user's default browser:
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --start
+node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --start          # add --rebind to bind a different board
 ```
 
 Print the JSON `display` field verbatim, then wait for the user to finish in

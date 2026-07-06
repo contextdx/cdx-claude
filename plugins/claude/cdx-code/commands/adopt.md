@@ -18,6 +18,8 @@ Aspects resolve their owner and usage links **by node slug**, so the board's spi
 
 If the synced analysis is missing, **stop** and tell the user to run `/sync` first — do not fabricate slugs. `cdx-adopt.js` enforces this too and exits with a "no synced spine" error, but catch it early with a clear message.
 
+`cdx-adopt.js` also refuses (exit 1) on a **branch mismatch** — the binding is pinned to one branch and the server rejects pushes from any other. Relay its `error` field verbatim; it names the pinned branch and the fix.
+
 Read `.contextdx/boards/<board-slug>.json` and keep its node `slug`s handy — every `ownerSlug` and `references[].nodeSlug` you emit **must** be one of them (that is how the row links back to a Repository / Service / Controller node).
 
 ## `--db` — database.schema

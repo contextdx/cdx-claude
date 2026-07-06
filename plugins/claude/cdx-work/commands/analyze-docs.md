@@ -105,7 +105,7 @@ Runs L0 first, then prompts for review before creating L1 boards for each drill-
    | `stale_catalogue` | 10   | true           | Server catalogue has changed since the last scan. Prompt (see step 3).                                       |
    | `skipped`         | 10   | true           | Last run was skipped — **skip is one-shot, this re-prompts on every `/analyze-docs`**. Prompt (see step 3).  |
 
-   On exit code `1` (config error) or `2` (API error): print the script's `error` field and stop — do not silently fall back. The user can fix config or re-run when the API recovers.
+   On exit code `1` (config error — including a **branch mismatch**, where the current git branch differs from the binding's pinned branch) or `2` (API error): print the script's `error` field verbatim and stop — do not silently fall back. The user can fix config, switch branches, or re-run when the API recovers.
 
 3. When `requiresPrompt` is true, ask via AskUserQuestion. Header: `Archetype check`. Question: include the script's `reason` verbatim, then `"How do you want to proceed?"`. Provide exactly these two options:
 
