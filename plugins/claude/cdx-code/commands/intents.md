@@ -87,6 +87,24 @@ Print `display` verbatim — it carries the description (the why), directive, pr
 - For `board_diff` payloads, the JSON `intent.payload.suggestions[]` rows are the machine-readable spec (add/remove/modify nodes or edges to make true in the codebase); a suggestion's `rationale` may end with "— Architect: …", a per-change note that is part of the spec.
 - Unresolved anchors (`resolved: false`) → locate the code by the element's slug/name; if there's no local board data at all, suggest running `/analyze` first.
 
+### Step 4.5: Gap review (mandatory before any edit)
+
+**Never start editing without this step.** Load the `intent-gap-review` skill and follow it to compare the **architect's intent** (anchors, directive, `board_diff` suggestions, attachments) against **code reality** (what the anchor files actually contain now). Produce the gap table the skill specifies and classify the result:
+
+- **`clean`** or **`minor`** (anchors resolve, the directive is locatable, suggestions apply — nits only) → say so briefly and continue to Step 5.
+- **`blocking`** (the skill's criteria — e.g. anchor files/elements gone, intent `stale`, the directive references components that don't exist, a `board_diff` suggestion is inapplicable, an attachment contradicts the code, or most anchors are unresolved) → do NOT edit. Show the user the gap table, then ask with AskUserQuestion:
+  - **Send back to architect** (recommended) — the gaps are the architect's to resolve. Draft a one-line reason + expected→found bullets (≤1800 chars) per the skill, show it to the user for approval, then bounce it back:
+
+    ```bash
+    node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-intents.js --clarify <intentId> --note "<approved gap summary>" --by "<name>"
+    ```
+
+    Print `display` verbatim. On success the intent leaves your queue (local copy dropped); tell the user to re-run `/intents` later once the architect has revised and re-opened it. **Stop here** — do not implement.
+  - **Continue anyway** — the user judges the gap surmountable; proceed to Step 5, noting the risk.
+  - **Reject** — the change is wrong for the codebase; go to Step 8 (rejected).
+
+**`--clarify` exit codes:** 1 = missing note/config (a note is required — it's the only thing the architect receives); 2 = intent not found on the server; 3 = API error or `notAvailable: true` (server can't record it — tell the user their **decision was NOT recorded**).
+
 ### Step 5: Implement the change
 
 Use your own tools (Read, Glob, Grep, Edit, Write, Bash) to make the change in the project:
@@ -161,5 +179,7 @@ A `--note` is effectively required for both — it's the only feedback the archi
 
 - **Never auto-resolve.** Every resolution — implemented, rejected, resolved_other — happens only after the user has seen the outcome (diff + verify results, or the rejection reason) and said yes.
 - **Never implement a stale intent** without the explicit warning + user override in Step 2.
+- **No gap review, no edits.** Always run Step 4.5 before touching a file; a `blocking` gap goes to the user, never silently forced through.
+- **Never `--clarify` without a user-approved note.** The bounce-back note is the only thing the architect receives — draft it, show it, get a yes, then send.
 - **Claim before implementing**; the server refuses `implemented` on unclaimed intents.
 - **No verify, no `implemented`.** Enforced: `--resolve --kind implemented` is refused without fresh passing `--record-verify` evidence. If no checks exist in the project, record the closest honest signal (e.g. a build) and tell the user.

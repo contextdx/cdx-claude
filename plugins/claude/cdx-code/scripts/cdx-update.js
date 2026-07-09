@@ -26,7 +26,7 @@ Then restart ${t}.`}}function h(){let{host:e,pluginName:t,hostName:n}=g(),s={suc
 
 \`\`\`
 ${i.output}
-\`\`\``);let o=c(e,["plugin","update",t,"--scope",r.scope]);o.code!==0&&a(s,`plugin update failed: ${o.output}`,3,`\u274C **Update failed** for \`${t}\` (scope: ${r.scope}):
+\`\`\``);let o=c(e,["plugin","update",r.id,"--scope",r.scope]);o.code!==0&&a(s,`plugin update failed: ${o.output}`,3,`\u274C **Update failed** for \`${t}\` (scope: ${r.scope}):
 
 \`\`\`
 ${o.output}
