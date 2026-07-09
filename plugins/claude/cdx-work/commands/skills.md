@@ -42,6 +42,7 @@ Check the exit code and JSON output:
 
 **On `--sync`**, summarize from the JSON:
 
+- If `withheld.count > 0` → tell the user: "`<withheld.count>` skill file(s) need a newer plugin — run `/update`". These are script/asset files this plugin build can't accept yet; everything else synced normally.
 - `written` / `updated` / `deleted` / `unchanged` — files created, refreshed, removed, or already current under `skillsDir`.
 - **`localEdits[]`** — files you have edited that were **left untouched**. If non-empty, show the `note` and tell the user: "These skill files have local edits and were not overwritten. To reconcile: either adopt your edits on the platform (so they become an app-tier override) or discard your local changes and re-run `/skills`."
 - `foreign[]` — files that already existed at a managed path but this command never wrote, so they were left alone. Mention them if present.
@@ -51,6 +52,7 @@ Remind the user that the compiled skills (and `cdx-skills.lock.json`) are meant 
 
 **On `--status`**, report:
 
+- If `withheld.count > 0` → "`<withheld.count>` skill file(s) need a newer plugin — run `/update`".
 - `inSync: true` → "Skills are up to date."
 - `upstreamChanged: true` → "The platform's skills changed — run `/skills` to pull them."
 - `locallyModified[]` → list the files the user has edited (these will be protected on the next sync).

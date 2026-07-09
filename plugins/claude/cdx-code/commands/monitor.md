@@ -63,11 +63,21 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-insights.js --save-insight .contextdx/mon
 - Push failed → report "Saved locally — push failed: <error>"
 - `notAvailable: true` → report "Saved locally — server push not yet available"
 
+**Optional — propose intents (unattended/scheduled runs):** append `--propose-intents` to also turn the highest-signal findings (a concrete `recommendation` + `high`/`critical` priority) into **draft intents** referencing their findings. They are NOT pullable until an architect reviews and locks them — the queue fills itself, under human review. Default off; interactive runs usually leave promotion to the architect.
+
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-insights.js --save-insight .contextdx/monitoring/skeleton.json --board-slug <boardSlug> --require-pack --push --propose-intents
+```
+
+The result's `proposedIntentIds[]` lists what was proposed.
+
 ### Step 6: Report
 
 Print a summary table (signals pulled, matched/unmatched, findings by priority, pushed/saved), then:
 
 > Findings landed as a **draft insight** on the portal's insights tab. An architect can promote individual findings to intents there; developers pick promoted intents up with `/intents`.
+
+If `--propose-intents` proposed any (`proposedIntentIds[]`), add: "N intents proposed as drafts — they appear for review on the board's intents tab and become pullable once an architect locks them."
 
 ## Setup (`/monitor setup`)
 

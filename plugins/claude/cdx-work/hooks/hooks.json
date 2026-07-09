@@ -1,5 +1,5 @@
 {
-  "description": "ContextDX hooks for session status",
+  "description": "ContextDX hooks: session status, cdx display guard, intents resolve gate",
   "hooks": {
     "SessionStart": [
       {
@@ -8,6 +8,30 @@
           {
             "type": "command",
             "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/check-config.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-resolve-gate.js",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-display-guard.js",
             "timeout": 10
           }
         ]

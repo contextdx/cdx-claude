@@ -1,32 +1,25 @@
 ---
 category: connect
 description: Update this plugin to the latest published version
-allowed-tools: Bash
+allowed-tools: Bash(node:*)
 ---
 
 Update **Cdx Code** (`cdx-code`) to the latest version published for
-**Claude Code**. The update mechanism differs per host — the steps below already resolved to
-the right one for this install.
+**Claude Code**. The script looks up the plugin's actual installed marketplace and scope and
+updates it directly — it does not guess or retry blindly.
 
 ## Update workflow
 
-Run these to update the plugin, then tell the user to restart Claude Code:
+Run the update script:
 
 ```bash
-claude plugin marketplace update contextdx
-claude plugin update cdx-code
+node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-update.js --host claude --plugin-name cdx-code --host-name "Claude Code"
 ```
 
-Installed with a non-default scope? Re-run the second command with `--scope project` or `--scope local` to match.
+Print the JSON `display` field verbatim — it already states old → new version (or the reason it
+couldn't update). Do not reformat it, and do not state a version number yourself beyond what
+`display` says.
 
-## After updating
-
-- If the steps above ran shell commands, confirm they exited cleanly before telling the user the
-  update is done — relay any error output verbatim rather than guessing at the cause.
-- **Don't state a version number yourself.** These commands don't reliably report the new version
-  before a restart — plugin installs are versioned directories, and this session's plugin root
-  stays pinned to the old one until relaunch. Relay only what the command output actually said.
-- The update only takes effect after **restarting Claude Code** — say so explicitly, every time,
-  and point the user at `/help` (or `/status`) right after they restart to confirm which version
-  is now active.
-- Already on the latest version? Say so plainly instead of re-running anything.
+If the script exits non-zero, `display` already explains what went wrong (marketplace refresh
+failed, plugin not found under any scope, or the update command itself failed) — relay it as-is
+rather than guessing at a fix or retrying with different flags.
