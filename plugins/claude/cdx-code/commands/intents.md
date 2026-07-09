@@ -84,7 +84,8 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-intents.js --show <intentId>
 Print `display` verbatim — it carries the description (the why), directive, proposed board changes, anchor→file map with architect notes, and downloaded attachments. Then:
 
 - **Read every attachment with a local path** (`.contextdx/intents/attachments/<intentId>/`) — including images/PDFs; they are part of the spec. A `downloadError` means continue with the directive alone and tell the user.
-- For `board_diff` payloads, the JSON `intent.payload.suggestions[]` rows are the machine-readable spec (add/remove/modify nodes or edges to make true in the codebase); a suggestion's `rationale` may end with "— Architect: …", a per-change note that is part of the spec.
+- For `board_diff` payloads, the JSON `intent.payload.suggestions[]` rows are the machine-readable spec (add/remove/modify nodes, edges, or aspects to make true in the codebase); a suggestion's `rationale` may end with "— Architect: …", a per-change note that is part of the spec.
+- **Aspect anchors** (`elementType: "aspect"`, e.g. a database table or an API endpoint) resolve to no local files yet — the anchor `slug` IS the aspect's identity (a table name or `METHOD /path`), so locate it in the codebase by that identity. A `remove` aspect suggestion means deleting that table/endpoint; the architect's board shows it as staged until your push confirms it.
 - Unresolved anchors (`resolved: false`) → locate the code by the element's slug/name; if there's no local board data at all, suggest running `/analyze` first.
 
 ### Step 4.5: Gap review (mandatory before any edit)
