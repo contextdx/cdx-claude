@@ -21,7 +21,7 @@ can also switch boards; `/logout` disconnects this project.
 ## Login Workflow
 
 The script's JSON output always includes a `display` field of ready-made
-markdown. **Print `display` verbatim — never reformat, summarise, or rebuild it.**
+markdown. **Print `display` verbatim in your reply — never reformat, summarise, or rebuild it; the Bash output panel is collapsed for the user.**
 Branch only on `status` and the exit code.
 
 ### Step 0: Check the current connection

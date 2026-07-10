@@ -176,7 +176,7 @@ If ContextDX configuration exists:
 2. If creating a new L0 board:
    - Read `boardSlug` from config (`.contextdx/config.json` → `boardSlug` field)
    - If config has no `boardSlug`, make the **connect-now offer** — ask with **AskUserQuestion** "Connect to ContextDX now?" (**Connect now** / **Not now**):
-     - **Connect now** → run the browser login here, printing each JSON `display` verbatim: `node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --start`, then `node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --poll --analyze-cmd analyze-docs` (generous Bash timeout, e.g. 250s). On `status: "complete"`, continue; anything else — stop, the display explains.
+     - **Connect now** → run the browser login here, printing each JSON `display` verbatim **in your reply** (the Bash output panel is collapsed for the user): `node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --start`, then `node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --poll --analyze-cmd analyze-docs` (generous Bash timeout, e.g. 250s). On `status: "complete"`, continue; anything else — stop, the display explains.
      - **Not now** → stop: "ContextDX not configured — run `/login` (browser) or `/configure` (manual) first"
    - Use the config `boardSlug` as the L0 board slug (this is the root board on the server)
 3. If drilling down, validate that:

@@ -16,9 +16,9 @@ Run the update script:
 node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-update.js --host claude --plugin-name cdx-work --host-name "Claude Code"
 ```
 
-Print the JSON `display` field verbatim — it already states old → new version (or the reason it
-couldn't update). Do not reformat it, and do not state a version number yourself beyond what
-`display` says.
+Print the JSON `display` field **verbatim in your reply** — the Bash output panel is collapsed for
+the user, so write it out in full. It already states old → new version (or the reason it couldn't
+update). Do not reformat it, and do not state a version number yourself beyond what `display` says.
 
 If the script exits non-zero, `display` already explains what went wrong (marketplace refresh
 failed, plugin not found under any scope, or the update command itself failed) — relay it as-is

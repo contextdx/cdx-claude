@@ -19,8 +19,9 @@ the server-side caveat.
    node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --logout
    ```
 
-2. Print the JSON `display` field **verbatim** — never reformat, summarise, or
-   rebuild it. It already covers what was cleared, the server-side caveat, and
-   the next command (`/login`).
+2. Print the JSON `display` field **verbatim in your reply** — never reformat,
+   summarise, or rebuild it; the Bash output panel is collapsed for the user, so
+   write it out in full. It already covers what was cleared, the server-side
+   caveat, and the next command (`/login`).
 
-3. On a non-zero exit, print `display` verbatim and stop.
+3. On a non-zero exit, print `display` verbatim in your reply and stop.

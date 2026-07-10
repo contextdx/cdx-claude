@@ -23,7 +23,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-build.js --board-slug <boardSlug>
 
 - **Exit 1** → not configured — make the **connect-now offer** (see Error Handling)
 - **Exit 3** → stop and report the JSON `error` field. If `errorType` is `auth_invalid` — make the **connect-now offer** (see Error Handling)
-- **Exit 0** → print the `display` field **verbatim — do not reformat, reorder, or summarise**.
+- **Exit 0** → print the `display` field **verbatim in your reply — do not reformat, reorder, or summarise** (the Bash output panel is collapsed for the user).
 
 **Skills freshness gate:** read the pack (`packPath`). If `skills.available` and (`skills.upstreamChanged` or `skills.compiledCount` is 0), sync first — building against a stale spec is building the wrong app:
 
@@ -75,5 +75,5 @@ Tell the user to run `/analyze-archetypes`, then `/analyze`, then `/sync`. For a
 
 Used whenever ContextDX is not configured or the credentials were rejected (`errorType: "auth_invalid"`). Ask with **AskUserQuestion** — "Connect to ContextDX now?" (**Connect now** / **Not now**):
 
-- **Connect now** → run the browser login here, printing each JSON `display` verbatim: `node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --start`, then `node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --poll --analyze-cmd analyze` (generous Bash timeout, e.g. 250s). On `status: "complete"`, resume this command from the step that failed; anything else — stop, the display explains.
+- **Connect now** → run the browser login here, printing each JSON `display` verbatim **in your reply** (the Bash output panel is collapsed for the user): `node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --start`, then `node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --poll --analyze-cmd analyze` (generous Bash timeout, e.g. 250s). On `status: "complete"`, resume this command from the step that failed; anything else — stop, the display explains.
 - **Not now** → stop with the canonical message: "ContextDX not configured — run `/login` (browser) or `/configure` (manual) first" (or, when credentials were rejected: "Your ContextDX credentials were rejected — run `/login` to reconnect").

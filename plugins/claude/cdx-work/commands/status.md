@@ -17,9 +17,11 @@ it and pass its output through.
    node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-status.js --analyze-cmd analyze-docs
    ```
 
-2. Print the script's stdout **verbatim** — it is already formatted markdown,
-   including a "Next steps" section. Do not reformat, reorder, summarise, or
-   re-derive any state by reading `.contextdx/` files yourself.
+2. Reproduce the script's stdout **verbatim in your reply** — write it out in
+   full, including the "Next steps" section; the Bash output panel is collapsed
+   for the user, so nothing shows unless you do. Print it fresh each call, and
+   don't reformat, reorder, summarise, or re-derive state by reading
+   `.contextdx/` files yourself.
 
 3. If the script exits non-zero, print its output verbatim and stop. Do not
    fabricate status.
