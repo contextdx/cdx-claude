@@ -1,8 +1,8 @@
 ---
 category: map
-description: Sync architecture analysis to ContextDX
+description: "Map · Sync architecture analysis to ContextDX"
 argument-hint: [--board <slug> | --all]
-allowed-tools: Read, Bash(node:*)
+allowed-tools: Read, Bash(node:*), AskUserQuestion
 ---
 
 Synchronize local architecture analysis to ContextDX, board by board.
@@ -52,7 +52,7 @@ Read `.contextdx/config.json` and extract ContextDX credentials:
 - `branch`: Git branch name for sync
 - `boardSlug`: Root board slug
 
-If configuration is missing or `boardSlug` is not set, instruct the user to run `/login` (browser) or `/configure` (manual) first.
+If configuration is missing or `boardSlug` is not set, make the **connect-now offer** (see Error Handling).
 
 ### Step 2: Load Board Manifest
 
@@ -116,7 +116,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-sync.js \
 The CLI outputs one JSON object to stdout. Branch on `success`:
 
 - **`success: true`** — summarise from `pushResult` (`nodesCreated`/`nodesUpdated`/`edgesCreated`/`edgesUpdated`, plus any `pushResult.errors[]`) and, in smart-sync mode, the `diff` counts (`newNodes`/`changedNodes`/`unchangedNodes`, same for edges).
-- **`success: false`** — report the `error` field. If `errorType` is `auth_invalid`, the credentials were rejected (revoked binding or rotated secret) — tell the user to run `/login` to reconnect, rather than reporting a generic API error.
+- **`success: false`** — report the `error` field. If `errorType` is `auth_invalid`, the credentials were rejected (revoked binding or rotated secret) — make the **connect-now offer** (see Error Handling) rather than reporting a generic API error.
 
 ### Step 6: Report Results
 
@@ -136,7 +136,14 @@ If syncing multiple boards, show a summary at the end, including each board's vi
 CLI exit codes:
 
 - `0`: Success
-- `1`: Configuration error (missing file, invalid format, missing --board-slug) — "ContextDX not configured — run `/login` (browser) or `/configure` (manual) first". Also used for a **branch mismatch** (current git branch differs from the binding's pinned branch) — relay the `error` field verbatim; it names the fix
+- `1`: Configuration error (missing file, invalid format, missing --board-slug) — make the **connect-now offer** (below). Also used for a **branch mismatch** (current git branch differs from the binding's pinned branch) — relay the `error` field verbatim; it names the fix (no offer: the config is fine)
 - `2`: Analysis file error (missing or invalid JSON, missing boardSlug in metadata) — suggest running `/analyze` first
 - `3`: Validation error (invalid node/edge structure or archetype mismatch) — report the JSON `error` detail
 - `4`: API error — report the JSON `error`; the CLI already retries transient failures and maps HTTP errors to messages, so relay its text rather than re-deriving HTTP semantics
+
+### Connect-now offer
+
+Used whenever ContextDX is not configured or the credentials were rejected (`errorType: "auth_invalid"`). Ask with **AskUserQuestion** — "Connect to ContextDX now?" (**Connect now** / **Not now**):
+
+- **Connect now** → run the browser login here, printing each JSON `display` verbatim: `node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --start`, then `node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --poll --analyze-cmd analyze` (generous Bash timeout, e.g. 250s). On `status: "complete"`, resume this command from the step that failed; anything else — stop, the display explains.
+- **Not now** → stop with the canonical message: "ContextDX not configured — run `/login` (browser) or `/configure` (manual) first" (or, when credentials were rejected: "Your ContextDX credentials were rejected — run `/login` to reconnect").

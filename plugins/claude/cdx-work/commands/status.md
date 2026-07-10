@@ -1,6 +1,6 @@
 ---
 category: connect
-description: Show ContextDX sync status and analysis summary
+description: "Connect · Show ContextDX sync status and analysis summary"
 allowed-tools: Bash(node:*)
 ---
 

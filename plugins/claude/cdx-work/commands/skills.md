@@ -1,8 +1,8 @@
 ---
 category: build
-description: "Compile this project's ContextDX skills into the repo. WRITE-CAPABLE: writes IDE-native skill files (never overwrites your local edits)."
+description: "Build · Compile this project's ContextDX skills into the repo. WRITE-CAPABLE: writes IDE-native skill files (never overwrites your local edits)."
 argument-hint: [--status]
-allowed-tools: Read, Bash
+allowed-tools: Read, Bash, AskUserQuestion
 ---
 
 Write this project's ContextDX **skills** into the repo. A skill is composed on the platform from three tiers — CDX defaults, your org's customizations, and this app's own overrides — and this command compiles that into IDE-native skill files under the host skills directory (for Claude Code: `.claude/skills/`).
@@ -34,8 +34,8 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-skills.js --status --board-slug <boardSlu
 
 Check the exit code and JSON output:
 
-- **Exit code 1** → stop and tell the user: "ContextDX not configured — run `/login` (browser) or `/configure` (manual) first".
-- **Exit code 3** → stop and report the API error from the JSON `error` field. If `errorType` is `auth_invalid`, the credentials were rejected — tell the user to run `/login` to reconnect.
+- **Exit code 1** → not configured — make the **connect-now offer** (see the end of this file).
+- **Exit code 3** → stop and report the API error from the JSON `error` field. If `errorType` is `auth_invalid`, the credentials were rejected — make the **connect-now offer** (see the end of this file).
 - If `featureAvailable` is `false` → stop and tell the user: "This ContextDX server doesn't expose skills yet — ask your admin to upgrade".
 
 ### Step 2: Report the result
@@ -59,3 +59,10 @@ Remind the user that the compiled skills (and `cdx-skills.lock.json`) are meant 
 - `missing[]` → managed files that were deleted from disk (a sync will restore them).
 
 Do not edit any skill file yourself — the CLI owns writing. Your job is to run it and explain the result.
+
+## Connect-now offer
+
+Used whenever ContextDX is not configured or the credentials were rejected (`errorType: "auth_invalid"`). Ask with **AskUserQuestion** — "Connect to ContextDX now?" (**Connect now** / **Not now**):
+
+- **Connect now** → run the browser login here, printing each JSON `display` verbatim: `node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --start`, then `node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --poll --analyze-cmd analyze-docs` (generous Bash timeout, e.g. 250s). On `status: "complete"`, resume this command from the step that failed; anything else — stop, the display explains.
+- **Not now** → stop with the canonical message: "ContextDX not configured — run `/login` (browser) or `/configure` (manual) first" (or, when credentials were rejected: "Your ContextDX credentials were rejected — run `/login` to reconnect").

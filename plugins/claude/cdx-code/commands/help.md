@@ -1,6 +1,6 @@
 ---
 category: connect
-description: List all cdx-code commands with descriptions and the plugin version
+description: "Connect · List all cdx-code commands with descriptions and the plugin version"
 allowed-tools: Bash(node:*)
 ---
 

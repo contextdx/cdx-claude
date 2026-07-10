@@ -1,8 +1,8 @@
 ---
 category: map
-description: Analyze a document/knowledge set into a layered knowledge board
+description: "Map · Analyze a document/knowledge set into a layered knowledge board"
 argument-hint: [--clean | --drill <parent-board-slug>/<node-slug> | --all]
-allowed-tools: Read, Glob, Grep, Write, Bash(node:*)
+allowed-tools: Read, Glob, Grep, Write, Bash(node:*), AskUserQuestion
 ---
 
 Perform progressive knowledge analysis with layered board support.
@@ -175,7 +175,9 @@ If ContextDX configuration exists:
 1. Read `.contextdx/boards/manifest.json` if it exists
 2. If creating a new L0 board:
    - Read `boardSlug` from config (`.contextdx/config.json` → `boardSlug` field)
-   - If config has no `boardSlug`, stop and instruct user to run `/login` (browser) or `/configure` (manual) first
+   - If config has no `boardSlug`, make the **connect-now offer** — ask with **AskUserQuestion** "Connect to ContextDX now?" (**Connect now** / **Not now**):
+     - **Connect now** → run the browser login here, printing each JSON `display` verbatim: `node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --start`, then `node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --poll --analyze-cmd analyze-docs` (generous Bash timeout, e.g. 250s). On `status: "complete"`, continue; anything else — stop, the display explains.
+     - **Not now** → stop: "ContextDX not configured — run `/login` (browser) or `/configure` (manual) first"
    - Use the config `boardSlug` as the L0 board slug (this is the root board on the server)
 3. If drilling down, validate that:
    - The parent board exists in the manifest

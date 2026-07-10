@@ -1,8 +1,8 @@
 ---
 category: map
-description: Generate a few demonstrative, path-rich insights on a board to showcase the insights feature
+description: "Map · Generate a few demonstrative, path-rich insights on a board to showcase the insights feature"
 argument-hint: "[count] [--board <slug>] [focus prompt]"
-allowed-tools: Read, Glob, Grep, Write, Bash(node:*)
+allowed-tools: Read, Glob, Grep, Write, Bash(node:*), AskUserQuestion
 ---
 
 Generate a small set of **demonstrative** insights — each with edge-grounded paths that connect multiple nodes — so a board makes an immediate visual impression. This is the showcase counterpart to `/insights`: where `/insights` runs an analysis to completion, `/demo-insights` deliberately picks path-friendly skills and emphasises legible, multi-node paths over exhaustive findings.
@@ -22,9 +22,9 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-insights.js --list-insight-skills --board
 ```
 
 Handle the result exactly as `/insights` does:
-- **Exit 1** → "ContextDX not configured — run `/login` (browser) or `/configure` (manual) first" and stop
+- **Exit 1** → not configured — make the **connect-now offer** (see Error Handling)
 - **Exit 2** → "No board data found — run `/analyze` first" and stop
-- **Exit 3** → report the API `error` field and stop (if `errorType` is `auth_invalid`, credentials were rejected — run `/login` to reconnect)
+- **Exit 3** → report the API `error` field and stop (if `errorType` is `auth_invalid`, credentials were rejected — make the **connect-now offer**, see Error Handling)
 - `featureAvailable: false` → "No insight skills available for this account" and stop
 - empty `skills` → "No insight skills configured — contact your workspace admin" and stop
 
@@ -105,4 +105,11 @@ Then tell the user the board is ready to open/share, and remind them which skill
 
 ## Error Handling
 
-Same as `/insights`: no config → `/configure`; no board data → `/analyze`; a skill with no instructions → skip and report; push fails or endpoint unavailable → save locally and report "Saved locally — push failed: <error>".
+Same as `/insights`: no board data → `/analyze`; a skill with no instructions → skip and report; push fails or endpoint unavailable → save locally and report "Saved locally — push failed: <error>".
+
+### Connect-now offer
+
+Used whenever ContextDX is not configured or the credentials were rejected (`errorType: "auth_invalid"`). Ask with **AskUserQuestion** — "Connect to ContextDX now?" (**Connect now** / **Not now**):
+
+- **Connect now** → run the browser login here, printing each JSON `display` verbatim: `node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --start`, then `node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --poll --analyze-cmd analyze-docs` (generous Bash timeout, e.g. 250s). On `status: "complete"`, resume this command from the step that failed; anything else — stop, the display explains.
+- **Not now** → stop with the canonical message: "ContextDX not configured — run `/login` (browser) or `/configure` (manual) first" (or, when credentials were rejected: "Your ContextDX credentials were rejected — run `/login` to reconnect").

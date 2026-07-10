@@ -1,8 +1,8 @@
 ---
 category: operate
-description: Correlate monitoring signals (errors, logs, cloud costs) with your architecture board and push findings as insights
+description: "Operate · Correlate monitoring signals (errors, logs, cloud costs) with your architecture board and push findings as insights"
 argument-hint: "[setup | --input <signals-file> | <focus prompt>]"
-allowed-tools: Read, Glob, Grep, Edit, Write, Bash(node:*)
+allowed-tools: Read, Glob, Grep, Edit, Write, Bash(node:*), AskUserQuestion
 ---
 
 Pull recent operational signals from your monitoring tools (Sentry, CloudWatch, cost APIs, …), correlate them with the nodes and edges on your architecture board, and push the findings as a draft insight. On the portal, an architect reviews the findings and promotes the actionable ones to **intents** — which developers then pick up with `/intents`. Methodology, the signals schema, and per-vendor recipes live in [knowledge/monitoring-correlation/SKILL.md](../knowledge/monitoring-correlation/SKILL.md).
@@ -17,8 +17,8 @@ If `$ARGUMENTS` is `setup`, skip to **Setup** below.
 node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-insights.js --list-insight-skills
 ```
 
-- **Exit code 1** → stop: "ContextDX not configured — run `/login` (browser) or `/configure` (manual) first"
-- **Exit code 3** with `errorType: "auth_invalid"` → stop: "Your ContextDX credentials were rejected — run `/login` to reconnect"
+- **Exit code 1** → not configured — make the **connect-now offer** (see Error handling)
+- **Exit code 3** with `errorType: "auth_invalid"` → credentials rejected — make the **connect-now offer** (see Error handling)
 - **Exit code 3** otherwise → stop and relay the JSON `error` field
 
 Read `.contextdx/monitoring/config.json` if it exists (created by `/monitor setup`): enabled sources, window, and `insightSkillSlug`. Without it, use defaults: auto-detect sources, 7-day window, skill slug `operational-signals`. If the configured skill slug is **not** in the returned `skills[]` → stop: "This ContextDX server doesn't expose operational-signals monitoring yet — ask your admin to upgrade".
@@ -92,8 +92,14 @@ If `--propose-intents` proposed any (`proposedIntentIds[]`), add: "N intents pro
 
 ## Error handling
 
-- **No config**: "ContextDX not configured — run /login (browser) or /configure (manual) first"
-- **Credentials rejected** (`errorType: "auth_invalid"`): "Your ContextDX credentials were rejected — run /login to reconnect"
+- **No config** / **credentials rejected** (`errorType: "auth_invalid"`): make the **connect-now offer** (below)
 - **No board data** (local and `--from-server` both fail): "No board data — run /analyze and /sync first"
 - **Skill missing on server**: "This ContextDX server doesn't expose operational-signals monitoring yet — ask your admin to upgrade"
 - **Corrupt map/config/signals file**: relay the CLI's `error` verbatim — it names the file and the fix
+
+### Connect-now offer
+
+Used whenever ContextDX is not configured or the credentials were rejected (`errorType: "auth_invalid"`). Ask with **AskUserQuestion** — "Connect to ContextDX now?" (**Connect now** / **Not now**):
+
+- **Connect now** → run the browser login here, printing each JSON `display` verbatim: `node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --start`, then `node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --poll --analyze-cmd analyze` (generous Bash timeout, e.g. 250s). On `status: "complete"`, resume this command from the step that failed; anything else — stop, the display explains.
+- **Not now** → stop with the canonical message: "ContextDX not configured — run `/login` (browser) or `/configure` (manual) first" (or, when credentials were rejected: "Your ContextDX credentials were rejected — run `/login` to reconnect").

@@ -1,6 +1,6 @@
 ---
 category: map
-description: Analyse the codebase for archetype gaps and submit proposals before running full /analyze
+description: "Map · Analyse the codebase for archetype gaps and submit proposals before running full /analyze"
 argument-hint: [--dry-run | --skip-submit | --force | --replace]
 allowed-tools: Read, Glob, Grep, Write, Bash(node:*, git:*), AskUserQuestion
 ---
@@ -28,7 +28,10 @@ After this command finishes (and any submitted proposals are approved), `/analyz
 
 ### Step 0: Configuration and branch check
 
-Verify `.contextdx/config.json` exists. If not, instruct the user to run `/login` (browser) or `/configure` (manual) first and exit.
+Verify `.contextdx/config.json` exists. If not, make the **connect-now offer** — ask with **AskUserQuestion** "Connect to ContextDX now?" (**Connect now** / **Not now**):
+
+- **Connect now** → run the browser login here, printing each JSON `display` verbatim: `node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --start`, then `node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --poll --analyze-cmd analyze` (generous Bash timeout, e.g. 250s). On `status: "complete"`, continue; anything else — stop, the display explains.
+- **Not now** → stop: "ContextDX not configured — run `/login` (browser) or `/configure` (manual) first"
 
 Then run the branch guard — the binding is pinned to one branch and the server rejects pushes from any other, so scanning the wrong checkout is wasted work:
 

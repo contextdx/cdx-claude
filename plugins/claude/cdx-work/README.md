@@ -21,7 +21,7 @@ Restart Claude Code so the commands load. Scope the install with `--scope user` 
 
 Two ways to connect this document set to a board — both write the same `.contextdx/config.json`:
 
-**Browser login (fastest):** run `/login`. It signs you in through the ContextDX portal, lets you pick a workspace and a board that already has a Code Plugin binding, and writes the config for you — no tokens to copy. Use `/configure`'s "change board" option later to switch boards the same way.
+**Browser login (fastest):** run `/login`. It signs you in through the ContextDX portal, lets you pick a workspace and a board that already has a Code Plugin binding, and writes the config for you — no tokens to copy. Re-running `/login` while connected just confirms the connection; `/login switch` (or `/configure`'s "change board" option) binds the project to a different board, and `/logout` disconnects it (clears the local credentials).
 
 **Manual:** get a **Binding Token** and **API Secret** from the ContextDX Portal (**Sources → Add Source → Board Builder** — saving generates the secret), then create `.contextdx/config.json` at the root of your document set:
 

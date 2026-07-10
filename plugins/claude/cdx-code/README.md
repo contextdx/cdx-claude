@@ -21,7 +21,7 @@ Restart Claude Code so the commands load. Scope the install with `--scope user` 
 
 Two ways to connect this repo to a board — both write the same `.contextdx/config.json`:
 
-**Browser login (fastest):** run `/login`. It signs you in through the ContextDX portal, lets you pick a workspace and a board that already has a Code Plugin binding, and writes the config for you — no tokens to copy. Use `/configure`'s "change board" option later to switch boards the same way.
+**Browser login (fastest):** run `/login`. It signs you in through the ContextDX portal, lets you pick a workspace and a board that already has a Code Plugin binding, and writes the config for you — no tokens to copy. Re-running `/login` while connected just confirms the connection; `/login switch` (or `/configure`'s "change board" option) binds the project to a different board, and `/logout` disconnects it (clears the local credentials).
 
 **Manual:** get a **Binding Token** and **API Secret** from the ContextDX Portal (**Sources → Add Source → Board Builder** — saving generates the secret), then create `.contextdx/config.json` at your repo root:
 
@@ -103,7 +103,7 @@ Polyglot projects produce a unified board with cross-language relationships (HTT
 | `/intents` | Pull architect-authored intents (work items) for the board and pick one to implement |
 | `/intents <intentId>` | Claim, implement, verify, and resolve a specific intent (write-capable — edits project files) |
 | `/demo-insights [count] [--board <slug>]` | Seed a board with a few demonstrative, path-rich insights to showcase the insights feature |
-| `/adopt [--db \| --api]` | Extract a code aspect (database schema / API surface) onto the bound board |
+| `/adopt [--aspect <kind> \| --db \| --api]` | Extract a code aspect (database schema, API surface, frontend pages, event catalog) onto the bound board |
 | `/monitor` · `/monitor setup` | Correlate monitoring signals (errors, logs, cloud costs) with the board and push findings as a draft insight; `setup` configures sources + a recurring run |
 | `/status` | Show the lifecycle dial, config state, archetype precondition, analysis summary, and per-board sync status |
 | `/help` | List commands grouped by lifecycle stage, with the plugin version |

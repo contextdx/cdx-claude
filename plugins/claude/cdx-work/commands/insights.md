@@ -1,8 +1,8 @@
 ---
 category: understand
-description: Run server-defined insight analysis on your architecture board
+description: "Understand · Run server-defined insight analysis on your architecture board"
 argument-hint: [<prompt> | --select | --list | --all | <skill-slug>]
-allowed-tools: Read, Glob, Grep, Write, Bash(node:*)
+allowed-tools: Read, Glob, Grep, Write, Bash(node:*), AskUserQuestion
 ---
 
 Run server-defined insight analysis skills against your architecture board. The server defines **what** to analyse and **how** — the plugin fetches these definitions at runtime and executes them.
@@ -18,9 +18,9 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-insights.js --list-insight-skills --board
 ```
 
 Check the exit code and JSON output:
-- **Exit code 1** → stop and tell the user: "ContextDX not configured — run `/login` (browser) or `/configure` (manual) first"
+- **Exit code 1** → not configured — make the **connect-now offer** (see Error Handling)
 - **Exit code 2** → stop and tell the user: "No board data found — run `/analyze` first to build your architecture graph"
-- **Exit code 3** → stop and report the API error from the JSON `error` field. If the JSON `errorType` is `auth_invalid`, the credentials were rejected (revoked binding or rotated secret) — tell the user to run `/login` to reconnect (or re-check `/configure`).
+- **Exit code 3** → stop and report the API error from the JSON `error` field. If the JSON `errorType` is `auth_invalid`, the credentials were rejected (revoked binding or rotated secret) — make the **connect-now offer** (see Error Handling).
 - If `featureAvailable` is `false` → stop and tell the user: "No insight skills available for this account"
 - If `skills` is empty → stop and tell the user: "No insight skills configured — contact your workspace admin"
 
@@ -84,8 +84,8 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-insights.js --get-insight-skill <skill-sl
 ```
 
 Check the exit code:
-- **Exit code 1** → configuration error — run `/login` or `/configure`; stop
-- **Exit code 3** → skill not found or API error, skip this skill and report the error (if `errorType` is `auth_invalid`, credentials were rejected — run `/login`)
+- **Exit code 1** → configuration error — make the **connect-now offer** (see Error Handling); stop if declined
+- **Exit code 3** → skill not found or API error, skip this skill and report the error (if `errorType` is `auth_invalid`, credentials were rejected — make the **connect-now offer**)
 - On success, the output contains the `skill` object with `instructions` and `references[]` to use in execution
 
 For `--all`, fetch each skill's full data one at a time before executing it.
@@ -196,10 +196,16 @@ After all skills complete, display a summary table:
 
 ## Error Handling
 
-- **No config**: Report "ContextDX not configured — run /login (browser) or /configure (manual) first"
-- **Credentials rejected** (`errorType: "auth_invalid"`): Report "Your ContextDX credentials were rejected — run /login to reconnect (or re-check /configure)"
+- **No config** / **credentials rejected** (`errorType: "auth_invalid"`): make the **connect-now offer** (below)
 - **No board data**: Report "No board data found — run /analyze first"
 - **Skill has no instructions**: Skip it and report "Insight skill '<slug>' has no instructions"
 - **Validation errors (exit code 3)**: Read the `validationErrors` array from the JSON output. Fix the payload fields listed in the errors (wrong field names, missing required fields, invalid enum values), rewrite the temp file, and retry the save/push
 - **Push fails**: Save locally and report "Saved locally — push failed: <error>"
 - **Push endpoint not available**: Save locally and report "Saved locally — server push not yet available"
+
+### Connect-now offer
+
+Used whenever ContextDX is not configured or the credentials were rejected (`errorType: "auth_invalid"`). Ask with **AskUserQuestion** — "Connect to ContextDX now?" (**Connect now** / **Not now**):
+
+- **Connect now** → run the browser login here, printing each JSON `display` verbatim: `node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --start`, then `node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --poll --analyze-cmd analyze-docs` (generous Bash timeout, e.g. 250s). On `status: "complete"`, resume this command from the step that failed; anything else — stop, the display explains.
+- **Not now** → stop with the canonical message: "ContextDX not configured — run `/login` (browser) or `/configure` (manual) first" (or, when credentials were rejected: "Your ContextDX credentials were rejected — run `/login` to reconnect").

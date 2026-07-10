@@ -1,6 +1,6 @@
 ---
 category: build
-description: "Pull architect-authored intents for your board and implement them in this project. WRITE-CAPABLE: unlike other cdx commands, this one edits project files (with your approval at each step)"
+description: "Build · Pull architect-authored intents for your board and implement them in this project. WRITE-CAPABLE: unlike other cdx commands, this one edits project files (with your approval at each step)"
 argument-hint: [<intentId> | --list]
 allowed-tools: Read, Glob, Grep, Edit, Write, Bash, AskUserQuestion
 ---
@@ -23,8 +23,8 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-intents.js --list --board-slug <boardSlug
 
 Print `display` verbatim, then branch:
 
-- **Exit code 1** → stop (the display already says to run `/login` or `/configure`)
-- **Exit code 3** → stop; the display carries the error (including rejected credentials → `/login`)
+- **Exit code 1** → print the display, then make the **connect-now offer** (see the end of this file)
+- **Exit code 3** → stop; the display carries the error — for rejected credentials make the **connect-now offer** (see the end of this file)
 - **`featureAvailable: false`** → stop (the display carries the feature-gate message)
 - **`count: 0`** → stop after the display; there is nothing to work on
 
@@ -184,3 +184,10 @@ A `--note` is effectively required for both — it's the only feedback the archi
 - **Never `--clarify` without a user-approved note.** The bounce-back note is the only thing the architect receives — draft it, show it, get a yes, then send.
 - **Claim before implementing**; the server refuses `implemented` on unclaimed intents.
 - **No verify, no `implemented`.** Enforced: `--resolve --kind implemented` is refused without fresh passing `--record-verify` evidence. If no checks exist in the project, record the closest honest signal (e.g. a build) and tell the user.
+
+## Connect-now offer
+
+Used whenever ContextDX is not configured or the credentials were rejected (`errorType: "auth_invalid"`). Ask with **AskUserQuestion** — "Connect to ContextDX now?" (**Connect now** / **Not now**):
+
+- **Connect now** → run the browser login here, printing each JSON `display` verbatim: `node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --start`, then `node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --poll --analyze-cmd analyze-docs` (generous Bash timeout, e.g. 250s). On `status: "complete"`, resume this command from the step that failed; anything else — stop, the display explains.
+- **Not now** → stop with the canonical message: "ContextDX not configured — run `/login` (browser) or `/configure` (manual) first" (or, when credentials were rejected: "Your ContextDX credentials were rejected — run `/login` to reconnect").

@@ -1,6 +1,6 @@
 ---
 category: connect
-description: Configure ContextDX credentials and settings
+description: "Connect · Configure ContextDX credentials and settings"
 allowed-tools: Read, Write, Bash, AskUserQuestion
 ---
 

@@ -1,19 +1,19 @@
 ---
 category: connect
-description: Sign in to ContextDX in the browser and pick a board (no copy-paste)
-allowed-tools: Read, Write, Bash, AskUserQuestion
+description: "Connect · Sign in to ContextDX in the browser and pick a board (no copy-paste)"
+argument-hint: "[switch]"
+allowed-tools: Bash
 ---
 
 Connect this codebase to ContextDX by signing in through the browser. The
 credentials are written straight into `.contextdx/config.json` for you — no
 copying tokens by hand.
 
-If this project is **already bound to a board** (non-empty `boardSlug` in
-`.contextdx/config.json`), `/login` asks whether to **reconnect** to that board
-(refresh credentials; board and branch unchanged) or **connect to a different
-workspace/board** for this project. The browser is already signed in, so
-switching is just picking the new board — no repeated login. `/configure` can
-also switch boards; deleting `.contextdx/config.json` starts a fresh full setup.
+`/login` is **idempotent**: already connected → it says so and stops; stored
+credentials rejected → it flows straight into a fresh sign-in. To bind this
+project to a **different workspace/board**, run `/login switch` (the browser is
+already signed in, so switching is just picking the new board). `/configure`
+can also switch boards; `/logout` disconnects this project.
 
 > Prefer manual setup or running in CI? Use **`/configure`** instead — it stays
 > fully supported and takes `bindingToken`/`apiSecret` directly.
@@ -24,28 +24,33 @@ The script's JSON output always includes a `display` field of ready-made
 markdown. **Print `display` verbatim — never reformat, summarise, or rebuild it.**
 Branch only on `status` and the exit code.
 
-### Step 0: Already bound to a board?
+### Step 0: Check the current connection
 
-Read `.contextdx/config.json` and choose the Step 1 start flag by its `boardSlug`:
+Skip this step entirely when the user asked to switch boards (`switch`
+argument, or an explicit ask) — go straight to Step 1 with `--rebind`.
+Otherwise run:
 
-- **Empty or absent** → fresh connection: use `--start` (the browser shows the
-  full workspace/board picker).
-- **Non-empty** → this project is already bound to that board. You're already
-  signed in, so no full re-login is needed — ask with **AskUserQuestion**:
-  - **"Reconnect to `<boardSlug>`"** (refresh credentials; same board and
-    branch) → use `--start`.
-  - **"Connect to a different workspace/board"** (bind this project to another
-    board) → use `--start --rebind`, which unlocks the full picker.
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --check
+```
 
-Carry the chosen flag into Step 1.
+Branch on `status`:
+
+- **`authenticated`** → print `display` verbatim and **stop** — the user is
+  already connected; the panel names `/logout` and `/login switch`.
+- **`invalid`** → print `display` verbatim (stored credentials were rejected —
+  a fresh sign-in follows), then continue to Step 1.
+- **`unauthenticated`** or **`unreachable`** → continue to Step 1 without
+  printing anything (Step 1 reports its own success or failure).
 
 ### Step 1: Start the browser login
 
-Run the start phase with the flag chosen in Step 0. It requests a one-time code
-and (best-effort) opens the user's default browser:
+Run the start phase. It requests a one-time code and (best-effort) opens the
+user's default browser. A project already bound to a board re-authenticates to
+that same board; `--rebind` (the `switch` path) unlocks the full picker:
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --start          # add --rebind to bind a different board
+node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-login.js --start          # add --rebind only for /login switch
 ```
 
 Print the JSON `display` field verbatim, then wait for the user to finish in
