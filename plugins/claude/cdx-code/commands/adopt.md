@@ -21,6 +21,8 @@ The primary argument is `--aspect <kind>` (this is the flag `cdx-adopt.js` itsel
 
 If no `--aspect`/`--db`/`--api` flag is given, use `AskUserQuestion` to ask which kind to adopt, offering the built kinds above.
 
+When adopting `ui.pages` onto a layered board's sub-boards, write one payload per sub-board named `.contextdx/aspects/tmp/pages-payload-<sub-board>.json` (e.g. `pages-payload-portal-app.json`) — the inspector's route→page correlation merges every `pages-payload*.json` in that directory, so this suffix convention is what keeps drill-down pages correlatable.
+
 ## Precondition — the spine must be synced first
 
 Aspects resolve their owner and usage links **by node slug**, so the board's spine (nodes + edges) must already be synced. Before extracting:

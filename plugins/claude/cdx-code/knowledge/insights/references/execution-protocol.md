@@ -360,7 +360,6 @@ Build the `PushInsightsCommand` JSON. Every reference inside `insights`/`paths`/
 
 Note:
 - `insights.scope` is **required**. `insights.insights`, `insights.paths`, `insights.suggestions` are all optional — include only what the analysis produces.
-- The CLI injects `rootBoardSlug` automatically from config — do not include it in the payload.
 - Do not set `insights.name` — the data layer fills it from the parent record's title at render time.
 - `info` is a short (≤ 350 char) human-readable line describing **what this run surfaced** — e.g. `"3 auth risks incl. a hardcoded JWT secret; missing rate-limit on the payment path"`. It is stored on the push's audit thread so the pushed insight is traceable back to this analysis run and its source binding. Be specific and concrete; if omitted, the CLI falls back to a generic `Insights: <skill> → <board>` label.
 

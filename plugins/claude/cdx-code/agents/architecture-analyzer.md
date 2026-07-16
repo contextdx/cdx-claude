@@ -100,7 +100,7 @@ When in archetypes-only mode, you may still build temporary in-memory node-slug 
 
 **Structural skeleton (when provided):**
 
-When invoked by `/analyze`, a deterministic prepass has already written `.contextdx/skeleton.json` — read it first. It gives the candidate-file inventory (`nodes[]`, with `*.d.ts`/types/dto/test/barrel files already excluded) and the resolved JS/TS `imports` graph (`edges[]` — tsconfig aliases and barrels resolved, type-only dropped, deduped, hubs suppressed). Use it as ground truth: Step 3's file discovery comes from `nodes[]`, and JS/TS `imports` edges come from `edges[]` — do not re-glob or re-parse JS/TS imports. You still own everything semantic — archetype classification, `database-layer` grouping, domain grouping, slug/name refinement, descriptions, hierarchy, drill-down — and you still detect the non-import edge types and any non-JS/TS imports by reading files. The skeleton is file-granular: at L0/L1 aggregate its files into coarse nodes and roll up the edges; at L2/L3 its nodes map ~1:1. If the skeleton is absent (standalone invocation), fall back to the Glob/Grep process below.
+When invoked by `/analyze`, a deterministic prepass has already written `.contextdx/skeleton.json` — read it first. It gives the candidate-file inventory (`nodes[]`, with `*.d.ts`/types/dto/test/barrel files already excluded) and the resolved JS/TS `imports` graph (`edges[]` — tsconfig aliases and barrels resolved, type-only dropped, deduped, hubs suppressed). Use it as ground truth: Step 3's file discovery comes from `nodes[]`, and JS/TS `imports` edges come from `edges[]` — do not re-glob or re-parse JS/TS imports. You still own everything semantic — archetype classification, `database-layer` grouping, domain grouping, slug/name refinement, descriptions, hierarchy, drill-down — and you still detect the non-import edge types and any non-JS/TS imports by reading files. The skeleton is file-granular: at L0/L1 aggregate its files into coarse nodes and roll up the edges; at L2/L3 its nodes map ~1:1. **Persist that rollup as coverage provenance:** in full mode, every emitted node carries `coveredFiles` — the skeleton files it covers, as repo-relative paths or directory globs (`src/billing/**`, preferred for whole subtrees). Each skeleton file belongs in exactly one node's `coveredFiles`, or in the board metadata's `waivedFiles` (files you judge non-architectural — waive explicitly, never drop silently), or is deliberately left unclaimed to surface as pending coverage. If the skeleton is absent (standalone invocation), fall back to the Glob/Grep process below and set `coveredFiles` from the files you actually attributed to each node.
 
 **Analysis Process:**
 
@@ -213,6 +213,7 @@ When creating child board drill-down candidates:
     "techStacks": ["fastapi", "react"],
     "boardSlug": "my-project-overview",
     "layer": 0,
+    "waivedFiles": ["scripts/dev-seed.ts"],
     "description": "Brief board summary — what this board covers (max 500 chars)",
     "detailedDescription": "## My Project\n\nRich markdown overview of what this board represents.\n\n### Tech Stack\n- FastAPI backend\n- React frontend\n- PostgreSQL database"
   },
@@ -223,6 +224,7 @@ When creating child board drill-down candidates:
       "type": "server-archetype-name",
       "description": "Brief one-line description (max 500 chars)",
       "path": "/relative/path",
+      "coveredFiles": ["src/api/**"],
       "parentSlug": "parent-slug",
       "layerBoardSlug": "my-project-auth-domain",
       "detailedDescription": "## ComponentName\n\nWhat this component does.\n\n### Responsibilities\n- Key responsibility 1\n- Key responsibility 2\n\n### Technology\n- **Framework:** FastAPI\n- **Language:** Python\n- **Path:** `/src/api`",
@@ -245,7 +247,7 @@ When creating child board drill-down candidates:
 }
 ```
 
-> **Important:** Every node MUST have both `description` (brief, top-level) and `detailedDescription` (rich markdown, top-level). Do NOT put description inside `metadata`.
+> **Important:** Every node MUST have both `description` (brief, top-level) and `detailedDescription` (rich markdown, top-level). Do NOT put description inside `metadata`. In full mode every non-container node MUST also carry `coveredFiles` (containers/`domain_group` nodes whose children claim the files may omit it).
 >
 > **Board metadata:** Always set `metadata.description` and `metadata.detailedDescription` to provide the board's own context. This replaces the need for a root wrapper node — the board itself carries the project/domain description.
 

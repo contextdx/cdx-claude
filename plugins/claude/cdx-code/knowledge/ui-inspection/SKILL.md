@@ -30,7 +30,8 @@ composite only when annotations matter. Never read every capture by default.
 2. `component.name` — Glob/Grep for the component definition (`function <Name>`, `const <Name>`,
    `<Name>.tsx`).
 3. Correlated `pageAspectSlug` → the page's source files via the ui.pages extraction
-   (`.contextdx/aspects/tmp/pages-payload.json`, `renderTree` sources).
+   (`.contextdx/aspects/tmp/pages-payload*.json` — one file per adopted board layer,
+   `renderTree` sources).
 4. Floor: `cssSelector` + `ax.name` — grep for the visible text/aria-label.
 
 `component.identitySource` tells you how much to trust the identity — see

@@ -122,7 +122,9 @@ Only the propose step talks to ContextDX. If it fails with the config-missing er
 - The browser starts in **Browse** mode — the page is fully interactive (log in, navigate) and
   nothing is captured. In the toolbar, **Pick** arms click-to-pick and **Annotate** arms
   drag-a-box (each box takes a required note); clicking the armed mode again, or pressing
-  **Esc**, returns to Browse. Picks and annotations survive same-origin page navigations within
+  **Esc**, returns to Browse. The toolbar can be dragged out of the way (grab it anywhere except
+  a button); its position, picks, and annotations survive same-origin page navigations within
   the session.
-- The inspection browser uses a dedicated profile (no daily-browsing state). Nothing leaves the
-  machine: sessions are local files until a future phase adds an explicit push step.
+- The inspection browser uses a dedicated profile (no daily-browsing state). Sessions are local
+  files by default — nothing leaves the machine unless the user explicitly pushes (steps 6–7),
+  and each push names exactly what it would send before it sends it.

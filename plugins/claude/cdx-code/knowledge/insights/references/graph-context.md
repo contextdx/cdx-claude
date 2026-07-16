@@ -84,4 +84,4 @@ Insights can start at any layer board and paths can span across board boundaries
 
 ### Primary Board Selection
 
-See the Primary Board Selection section in [execution-protocol.md](../execution-protocol.md) for selection criteria. Store the result as `{{primaryBoardSlug}}` — this goes in the top-level `boardSlug` of the push command. All other boards your analysis covers get registered in `scope.boards`. The CLI injects `rootBoardSlug` automatically from config; do not include it in the payload.
+See the Primary Board Selection section in [execution-protocol.md](../execution-protocol.md) for selection criteria. Store the result as `{{primaryBoardSlug}}` — this goes in the top-level `boardSlug` of the push command. All other boards your analysis covers get registered in `scope.boards`.

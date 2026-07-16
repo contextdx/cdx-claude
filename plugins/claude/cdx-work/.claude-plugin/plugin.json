@@ -1,7 +1,22 @@
 {
   "name": "cdx-work",
+  "commands": [
+    "./commands/analyze-archetypes.md",
+    "./commands/analyze-docs.md",
+    "./commands/configure.md",
+    "./commands/demo-insights.md",
+    "./commands/help.md",
+    "./commands/insights.md",
+    "./commands/intents.md",
+    "./commands/login.md",
+    "./commands/logout.md",
+    "./commands/skills.md",
+    "./commands/status.md",
+    "./commands/sync.md",
+    "./commands/update.md"
+  ],
   "displayName": "Cdx Work",
-  "version": "0.6.7",
+  "version": "0.6.14",
   "description": "Knowledge and document architecture analysis for ContextDX Portal. Analyzes a document/knowledge set — specs, RFCs, policies, design docs, wikis — into a graph of concepts, documents, decisions, and their relationships, and syncs to ContextDX for collaborative knowledge boards. Tuned for Claude Cowork. Supports server-defined insight analysis skills.",
   "author": {
     "name": "ContextDx",

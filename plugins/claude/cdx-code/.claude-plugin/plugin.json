@@ -1,7 +1,26 @@
 {
   "name": "cdx-code",
+  "commands": [
+    "./commands/adopt.md",
+    "./commands/analyze-archetypes.md",
+    "./commands/analyze.md",
+    "./commands/build.md",
+    "./commands/configure.md",
+    "./commands/demo-insights.md",
+    "./commands/help.md",
+    "./commands/insights.md",
+    "./commands/inspect.md",
+    "./commands/intents.md",
+    "./commands/login.md",
+    "./commands/logout.md",
+    "./commands/monitor.md",
+    "./commands/skills.md",
+    "./commands/status.md",
+    "./commands/sync.md",
+    "./commands/update.md"
+  ],
   "displayName": "Cdx Code",
-  "version": "0.6.7",
+  "version": "0.6.14",
   "description": "Real-time codebase architecture analysis and visualization for ContextDX Portal. Analyzes codebases across multiple languages, detects tech stacks, identifies component relationships, and syncs to ContextDX for collaborative architecture boards. Supports server-defined insight analysis skills.",
   "author": {
     "name": "ContextDx",

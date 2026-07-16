@@ -41,8 +41,9 @@ All board data lives in `.contextdx/boards/`:
 5. If changes found:
    a. Load existing board data (nodes + edges)
    b. Re-analyze ONLY the changed/added files (Steps 3-6 scoped to those files)
-   c. Merge results: replace nodes whose `path` matches a changed file, add new nodes
-   d. Remove nodes whose `path` matches a deleted file
+   c. Merge results: replace nodes whose `coveredFiles` contain a changed file (fall back to
+      `path` matching for nodes analyzed before coverage tracking), add new nodes
+   d. Remove nodes all of whose `coveredFiles` (or whose `path`) match deleted files
    e. Remove edges where source or target node was removed
    f. Re-run relationship detection for changed nodes (Step 6)
    g. Write merged result to board JSON with updated `analyzedAt` and `analyzedAtCommit`
@@ -184,11 +185,21 @@ If ContextDX configuration exists:
 
 If board data exists AND `--clean` was NOT passed AND `analyzedAtCommit` is present in metadata:
 
-1. Run `git diff --name-only --diff-filter=ACMR <analyzedAtCommit> HEAD` to find changed/added files
-2. Run `git diff --name-only --diff-filter=D <analyzedAtCommit> HEAD` to find deleted files
-3. Filter to relevant source files (exclude `node_modules/`, `dist/`, `.git/`, `coverage/`, test files)
-4. If no changes: report "Board is up to date" and stop here
-5. If changes found: continue to Steps 2+ but scope analysis to changed files only
+1. Refresh the coverage ledger — it computes the incremental worklist deterministically
+   (current skeleton, per-node staleness since `analyzedAtCommit`, unclaimed files):
+
+   ```bash
+   node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-prepass.js --coverage
+   ```
+
+2. Read `.contextdx/coverage.json` and take this board's entry. The worklist is:
+   - `boards[].staleNodes[]` — nodes whose covered files changed since analysis → re-analyze these nodes from their listed `changedFiles`
+   - `pendingFiles[]` — files no node covers yet → new components to place
+   - `boards[].orphanedFiles[]` — covered files that no longer exist → remove/shrink their nodes
+3. Run `git diff --name-only --diff-filter=D <analyzedAtCommit> HEAD` to confirm deleted files
+4. If the worklist is empty (no stale nodes, no pending files, nothing deleted): report "Board is up to date" and stop here
+5. Otherwise: continue to Steps 2+ scoped to the worklist files only
+6. **Fallback:** if the coverage script fails, or the ledger marks this board `coverage: unknown` (analyzed before coverage tracking), scope from a raw `git diff --name-only --diff-filter=ACMR <analyzedAtCommit> HEAD` instead (exclude `node_modules/`, `dist/`, `.git/`, `coverage/`, test files)
 
 If `--clean` was passed: delete existing board JSON and store file, proceed with full analysis.
 
@@ -241,6 +252,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-prepass.js --scope-path <parent-node-path
 - Treat `nodes[]` as the ground-truth file inventory — do NOT re-glob or re-apply exclusion rules (already applied).
 - Treat `edges[]` as the authoritative `imports` edges for JS/TS — do NOT re-parse JS/TS imports by hand. For **non-JS/TS** files, detect imports yourself in Step 6.
 - The skeleton is **file-granular**. At **L2/L3** its nodes map ~1:1 to board nodes. At **L0/L1**, **aggregate** files into coarse domain/component nodes and **roll up** each file→file `imports` edge onto the coarse nodes (map each `tempId` to the slug of the node you fold it into; drop self-loops).
+- **Persist the mapping — coverage provenance.** The tempId→node-slug rollup you just made IS the coverage relation; record it on every node as `coveredFiles` (repo-relative paths, or directory globs like `src/billing/**` when a node owns a whole subtree — prefer globs for large subtrees). Every skeleton file must end up in exactly one node's `coveredFiles`, OR in the board metadata's `waivedFiles` (files you judge non-architectural — never silently drop them), OR deliberately unclaimed (it will surface as *pending* in coverage reports). Never claim the same file from two nodes.
 - The prepass does NOT classify archetypes, group the database layer, write descriptions, or detect non-import edges — those remain your job in Steps 5–6.
 
 Run this on every analysis (full and incremental); it is deterministic and fast, and always reflects current HEAD.
@@ -297,9 +309,9 @@ This tells the user which nodes can be expanded into child boards.
 
 Write analysis results to `.contextdx/boards/<board-slug>.json`.
 
-**Incremental:** Merge new/changed nodes into existing board data. Replace nodes whose `path` matches a changed file. Remove nodes whose `path` matches a deleted file. Remove edges referencing removed nodes.
+**Incremental:** Merge new/changed nodes into existing board data. Replace nodes whose `coveredFiles` contain a changed file (fall back to `path` for pre-coverage nodes). Remove nodes whose covered files were all deleted. Remove edges referencing removed nodes.
 
-Always record the current git commit hash via `git rev-parse HEAD` as `analyzedAtCommit`:
+Always record the current git commit hash via `git rev-parse HEAD` as `analyzedAtCommit`. Every node carries `coveredFiles` and the metadata carries `waivedFiles` (from Step 4.5):
 
 ```json
 {
@@ -310,7 +322,8 @@ Always record the current git commit hash via `git rev-parse HEAD` as `analyzedA
     "languages": ["typescript"],
     "techStacks": ["nextjs", "nestjs"],
     "boardSlug": "my-project-overview",
-    "layer": 0
+    "layer": 0,
+    "waivedFiles": ["scripts/dev-seed.ts"]
   },
   "nodes": [
     {
@@ -319,6 +332,7 @@ Always record the current git commit hash via `git rev-parse HEAD` as `analyzedA
       "type": "service",
       "description": "Handles HTTP requests",
       "path": "src/api",
+      "coveredFiles": ["src/api/**"],
       "parentSlug": null,
       "layerBoardSlug": null,
       "metadata": {}
@@ -350,6 +364,16 @@ For child boards, include parent references:
   }
 }
 ```
+
+### Step 8.5: Refresh Coverage Ledger
+
+After writing the board JSON, refresh the deterministic coverage ledger so `/status`, the next incremental run, and `/sync` (which reports coverage to the platform) all see current numbers:
+
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-prepass.js --coverage
+```
+
+Include the returned `display` markdown in your final report **verbatim — do not reformat, reorder, or summarise**. If the script fails, note it and continue — coverage is reporting, never a gate.
 
 ### Step 9: Update Manifest
 
@@ -398,5 +422,6 @@ Report summary after analysis:
 - Number of nodes by archetype (total, and how many new/updated/removed if incremental)
 - Number of relationships by type
 - Drill-down candidates identified
+- Coverage: the Step 8.5 `display` markdown, verbatim
 - Location of output file
 - Suggest running `/sync` to push to ContextDX

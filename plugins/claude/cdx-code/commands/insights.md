@@ -144,7 +144,7 @@ For each skill, follow the execution protocol in `references/execution-protocol.
    - Required: `id`, `action` (`add` | `remove` | `modify`), `targetType` (`node` | `edge` | `container`), `name`, `rationale` (5–500), `polarity`, `priority`
    - Optional: `element` (ElementKey for remove/modify), `fromElement`/`toElement` (ElementKeys for edges), `tags`
 9. **Write markdown report** — compose a detailed report for the `content` field
-10. **Assemble PushInsightsCommand** — build the full JSON payload. `scope` is required inside `insights`. The CLI injects `rootBoardSlug` automatically — do not include it:
+10. **Assemble PushInsightsCommand** — build the full JSON payload. `scope` is required inside `insights`:
    ```json
    {
      "boardSlug": "<primaryBoardSlug>",
