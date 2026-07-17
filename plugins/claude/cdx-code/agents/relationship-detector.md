@@ -55,7 +55,7 @@ You are a relationship detection specialist focused on identifying connections b
 
 **`imports` edges come from the prepass skeleton.**
 
-When invoked by `/analyze`, `.contextdx/skeleton.json` already contains the resolved JS/TS `imports` graph (`edges[]` — tsconfig aliases and barrels resolved, type-only dropped, deduped, hubs suppressed). Use those edges directly; do NOT re-parse JS/TS imports. Your job is the **semantic** edge types that require reading code — `db_read`/`db_write`, `api_call`, `uses`, `publishes`/`subscribes`, `grpc_call`, and cross-language calls — plus imports for any **non-JS/TS** files. The import-pattern table below is the fallback for standalone invocation (no skeleton) and for non-JS/TS languages.
+When invoked by `/analyze`, the prepass skeleton in `.contextdx/skeletons/` (`repo.json`, or `<board-slug>.json` for a drill-down) already contains the resolved JS/TS `imports` graph (`edges[]` — tsconfig aliases and barrels resolved, type-only dropped, deduped, hubs suppressed) plus deterministic `references` edges from agent-native markdown artifacts (a command naming the script it runs, a skill naming a doc — emit these as `uses`). Use those edges directly; do NOT re-parse JS/TS imports. Your job is the **semantic** edge types that require reading code — `db_read`/`db_write`, `api_call`, `uses`, `publishes`/`subscribes`, `grpc_call`, and cross-language calls — plus imports for any **non-JS/TS** files. The import-pattern table below is the fallback for standalone invocation (no skeleton) and for non-JS/TS languages.
 
 **Relationship Detection by Language:**
 

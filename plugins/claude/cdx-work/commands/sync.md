@@ -149,6 +149,14 @@ For each synced board, report:
 - Any errors from the `pushResult.errors` array
 - **View link**: if `boardUrls[<board-slug>]` (from Step 3.5) is a non-null URL, print it as a clickable link, e.g. `🔗 View board: <url>`. If it's `null` or absent, skip the link silently (don't surface an error — the server may be older or the link not yet resolvable).
 
+**Coverage** (the last CLI output may carry a `coverageReport` field — absent means the domain doesn't track coverage; skip silently):
+
+- `sent: true` → print `📊 Coverage snapshot sent — <percent>% analysed, <pending> pending, <staleNodes> stale node(s).` If `pending > 0` or `staleNodes > 0`, add: `Close the gap with /analyze-docs (incremental).`
+- `reason: "no_ledger"` → `No coverage ledger yet — run /analyze-docs (it computes coverage) so the platform can track analysis coverage.`
+- `reason: "feature_unavailable"` → "This ContextDX server doesn't expose analysis coverage yet — ask your admin to upgrade"
+- `reason: "branch_mismatch"` → note the snapshot was skipped because the ledger was computed on the wrong branch; `/status` explains the recovery.
+- Any other `reason` → one line: coverage snapshot failed with that reason (the sync itself still succeeded).
+
 If syncing multiple boards, show a summary at the end, including each board's view link where available.
 
 ---

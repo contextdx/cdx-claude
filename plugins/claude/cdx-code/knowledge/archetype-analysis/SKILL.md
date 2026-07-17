@@ -18,7 +18,7 @@ These heuristics run **before** any `/analyze` board is produced. The point of P
 A proposal should clear all four bars:
 
 1. **Coverage.** It applies to **≥2 distinct nodes** in the analyzed codebase. A one-off doesn't justify a new archetype — use an existing close-fit and add tags.
-2. **Semantic role.** A clear verb-like answer to "what does this *do* on the board." Good: `lambda_function`, `event_bus`, `feature_flag`. Bad: `utility`, `helper`, `common`.
+2. **Semantic role.** A clear verb-like answer to "what does this *do* on the board." Good: `lambda_function`, `event_bus`, `feature_flag`. Bad: `utility`, `helper`, `common`. **Agent-native stacks count**: repos built of prompt-ware — the prepass marks these skeleton nodes with `artifact.kind` (skill/command/agent) — commonly warrant archetypes like `agent_command`, `agent_skill`, `agent_definition` when the catalogue has no prompt-ware vocabulary yet; the detection pattern is mechanical (frontmatter signature), so bar 3 is trivially met.
 3. **Observable detection pattern.** Something a future analyzer can detect mechanically — file path convention, dependency marker, import signature, naming pattern. If a human couldn't write the detection rule in one sentence, the archetype is too vague.
 4. **No existing close fit.** Before proposing, scan the fetched archetype list for synonyms. If `database` already exists, don't propose `db_store`. If `service` exists, don't propose `microservice` unless you're splitting (then use an improvement instead).
 

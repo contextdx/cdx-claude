@@ -41,8 +41,7 @@ All board data lives in `.contextdx/boards/`:
 5. If changes found:
    a. Load existing board data (nodes + edges)
    b. Re-analyze ONLY the changed/added files (Steps 3-6 scoped to those files)
-   c. Merge results: replace nodes whose `coveredFiles` contain a changed file (fall back to
-      `path` matching for nodes analyzed before coverage tracking), add new nodes
+   c. Merge results: replace nodes whose `coveredFiles` contain a changed file, add new nodes
    d. Remove nodes all of whose `coveredFiles` (or whose `path`) match deleted files
    e. Remove edges where source or target node was removed
    f. Re-run relationship detection for changed nodes (Step 6)
@@ -51,7 +50,7 @@ All board data lives in `.contextdx/boards/`:
 
 **If no board data exists** (fresh project): run full analysis (Steps 0-9).
 
-**If `analyzedAtCommit` is missing** (old board data without commit tracking): fall back to full analysis.
+**If `analyzedAtCommit` is missing** (no commit anchor — incremental is impossible): fall back to full analysis.
 
 ### Clean: Full Re-Analysis
 
@@ -196,10 +195,12 @@ If board data exists AND `--clean` was NOT passed AND `analyzedAtCommit` is pres
    - `boards[].staleNodes[]` — nodes whose covered files changed since analysis → re-analyze these nodes from their listed `changedFiles`
    - `pendingFiles[]` — files no node covers yet → new components to place
    - `boards[].orphanedFiles[]` — covered files that no longer exist → remove/shrink their nodes
-3. Run `git diff --name-only --diff-filter=D <analyzedAtCommit> HEAD` to confirm deleted files
-4. If the worklist is empty (no stale nodes, no pending files, nothing deleted): report "Board is up to date" and stop here
-5. Otherwise: continue to Steps 2+ scoped to the worklist files only
-6. **Fallback:** if the coverage script fails, or the ledger marks this board `coverage: unknown` (analyzed before coverage tracking), scope from a raw `git diff --name-only --diff-filter=ACMR <analyzedAtCommit> HEAD` instead (exclude `node_modules/`, `dist/`, `.git/`, `coverage/`, test files)
+3. Narrate the starting point — one line from the script JSON, before any analysis work:
+   `Coverage before this run: <percent>% — <pending> pending, <staleNodes> stale.`
+4. Run `git diff --name-only --diff-filter=D <analyzedAtCommit> HEAD` to confirm deleted files
+5. If the worklist is empty (no stale nodes, no pending files, nothing deleted): report "Board is up to date", print the script's `display` markdown verbatim, and stop here
+6. Otherwise: continue to Steps 2+ scoped to the worklist files only
+7. **Fallback:** if the coverage script fails, scope from a raw `git diff --name-only --diff-filter=ACMR <analyzedAtCommit> HEAD` instead (exclude `node_modules/`, `dist/`, `.git/`, `coverage/`, test files). If the ledger marks this board `coverage: unknown` (its nodes carry no `coveredFiles`), incremental merge is impossible — stop and tell the user to run `/analyze --clean` for this board
 
 If `--clean` was passed: delete existing board JSON and store file, proceed with full analysis.
 
@@ -232,20 +233,20 @@ For each workspace/project:
 Run the prepass CLI to get a deterministic structural skeleton — the candidate-node inventory and the resolved `imports` graph — so the analysis does not reconstruct them from raw file reads:
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-prepass.js --out .contextdx/skeleton.json --summary
+node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-prepass.js --out .contextdx/skeletons/repo.json --summary
 ```
 
-For an L1+ drill-down board, scope the emitted nodes to the parent node's subtree (imports may still target files anywhere under the repo root):
+For an L1+ drill-down board, scope the emitted nodes to the parent node's subtree (imports may still target files anywhere under the repo root), and write it under the board's own name so it never clobbers the repo-wide skeleton:
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-prepass.js --scope-path <parent-node-path> --out .contextdx/skeleton.json --summary
+node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-prepass.js --scope-path <parent-node-path> --out .contextdx/skeletons/<board-slug>.json --summary
 ```
 
-`--summary` prints counts to stdout; the full skeleton is written to `.contextdx/skeleton.json`. Read that file. It contains:
+`--summary` prints counts to stdout; the full skeleton is written to the `--out` path (all skeletons live in `.contextdx/skeletons/`). Read that file. It contains:
 
-- `nodes[]` — candidate source files (all languages), already excluding `*.d.ts`/types/dto/test/barrel files. Each has a repo-relative `path`, a `tempId` (= `path`), a suggested `slug`/`name`, and `language`.
-- `edges[]` — the resolved **`imports`** graph for **JS/TS files only**: `{ fromTempId, toTempId, type: "imports", count }`. tsconfig path aliases and barrel re-exports are already resolved, type-only imports dropped, duplicates collapsed, and popular-helper hubs suppressed.
-- `stats` + `unresolvedSamples` — coverage numbers; a large `importsUnresolved` means some edges were missed and may need filling from file reads.
+- `nodes[]` — candidate source files (all languages), already excluding `*.d.ts`/types/dto/test/barrel files. Each has a repo-relative `path`, a `tempId` (= `path`), a suggested `slug`/`name`, and `language`. Nodes with an **`artifact`** field are **agent-native markdown artifacts** — prompt-ware components (`artifact.kind`: `skill` | `command` | `agent`) detected deterministically from YAML frontmatter; `artifact.description` carries the frontmatter description as seed context.
+- `edges[]` — `{ fromTempId, toTempId, type, count }`. `type: "imports"` is the resolved graph for **JS/TS files only** (tsconfig path aliases and barrel re-exports already resolved, type-only imports dropped, duplicates collapsed, popular-helper hubs suppressed). `type: "references"` is deterministic artifact wiring — an artifact's body names another skeleton file by path (a command running a bundled script, a skill pointing at a doc).
+- `stats` + `unresolvedSamples` — coverage numbers; a large `importsUnresolved` means some edges were missed and may need filling from file reads. `artifactNodes`/`referenceEdges` count the artifact layer.
 
 **Use the skeleton in Steps 5–6:**
 
@@ -272,6 +273,7 @@ Run this on every analysis (full and incremental); it is deterministic and fast,
 Apply these rules (start from the skeleton's `nodes[]` — file discovery and exclusion are already done):
 
 - **Exclude non-architectural files**: already applied in the skeleton (`*.d.ts`, types/dto, tests, barrels). Only re-check files you discover outside the skeleton (e.g. non-JS/TS).
+- **Agent-native artifacts are components, not docs**: skeleton nodes with `artifact.kind` (skills/commands/agents) are first-class architecture — group them like any other component family (e.g. a commands group, a knowledge/skills group, per plugin or domain), seed their `description` from `artifact.description`, and classify them with a fitting server archetype. If the catalogue has no fit for prompt-ware kinds, that is an archetype **gap** — Phase 1 (`/analyze-archetypes`) should have proposed archetypes such as `agent_command`/`agent_skill`; fall back to the closest existing archetype meanwhile and never silently waive artifacts.
 - **Group database files**: into a single `database-layer` container node at L0/L1 — the skeleton lists these as individual files, so you group them.
 - **Detect domain boundaries**: if applicable at this layer
 - **Classify by archetype**: using server archetype names — the skeleton does NOT classify, this is your job
@@ -280,6 +282,7 @@ Apply these rules (start from the skeleton's `nodes[]` — file discovery and ex
 ### Step 6: Relationship Detection
 
 - **`imports` edges (JS/TS):** take these from the Step 4.5 skeleton's `edges[]` — do NOT re-parse JS/TS imports. Map each edge's `fromTempId`/`toTempId` (file paths) to the slug of the board node that file belongs to, then dedupe and drop self-loops. For non-JS/TS files, parse imports yourself.
+- **`references` edges (artifacts):** map the skeleton's `type: "references"` edges the same way, emitting them as `uses` edges between the resulting board nodes (a command *uses* the script it runs, a skill *uses* the doc it loads). Add further artifact relationships you find by reading bodies (e.g. a command that says "load the X skill" without a path).
 - **Semantic edges (read the relevant files):** the skeleton does not detect these — derive them by reading the files of the nodes involved:
   - `db_read`/`db_write`: Repository/ORM operations
   - `api_call`: HTTP client usage (external or cross-service)
@@ -309,7 +312,7 @@ This tells the user which nodes can be expanded into child boards.
 
 Write analysis results to `.contextdx/boards/<board-slug>.json`.
 
-**Incremental:** Merge new/changed nodes into existing board data. Replace nodes whose `coveredFiles` contain a changed file (fall back to `path` for pre-coverage nodes). Remove nodes whose covered files were all deleted. Remove edges referencing removed nodes.
+**Incremental:** Merge new/changed nodes into existing board data. Replace nodes whose `coveredFiles` contain a changed file. Remove nodes whose covered files were all deleted. Remove edges referencing removed nodes.
 
 Always record the current git commit hash via `git rev-parse HEAD` as `analyzedAtCommit`. Every node carries `coveredFiles` and the metadata carries `waivedFiles` (from Step 4.5):
 
@@ -365,7 +368,7 @@ For child boards, include parent references:
 }
 ```
 
-### Step 8.5: Refresh Coverage Ledger
+### Step 8.5: Refresh Coverage Ledger + show the dashboard
 
 After writing the board JSON, refresh the deterministic coverage ledger so `/status`, the next incremental run, and `/sync` (which reports coverage to the platform) all see current numbers:
 
@@ -373,7 +376,23 @@ After writing the board JSON, refresh the deterministic coverage ledger so `/sta
 node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-prepass.js --coverage
 ```
 
-Include the returned `display` markdown in your final report **verbatim — do not reformat, reorder, or summarise**. If the script fails, note it and continue — coverage is reporting, never a gate.
+Print the returned `display` markdown **verbatim — do not reformat, reorder, or summarise** (it carries the progress bar, the delta since the previous run, and the ranked "Where to go next" list). If the script fails, note it and continue — coverage is reporting, never a gate (and skip Step 8.6).
+
+### Step 8.6: Offer the next area (interactive loop)
+
+The Step 8.5 JSON also carries `recommendations` — the deterministic next-step list (stale boards first, then pending areas, then unknown-coverage boards). The script owns those facts; **you own the coordination** — spend judgment connecting them to this session. Which area to analyse next is a genuine user decision:
+
+1. If `recommendations` is empty: skip to Step 9.
+2. **Give your read first** (1–3 sentences of judgment, after the verbatim dashboard): connect the recommendations to what you know — which stale node maps to the files just edited, whether a pending area looks load-bearing or like glue, what the user has been working on. Never restate or recompute the script's numbers.
+3. Ask with **AskUserQuestion** — header `Next area`; question: `Coverage is at <percent>%. Analyse another area now, or sync what you have?` Options, in order:
+   - The first 3 `recommendations`: label from `label` (append "(Recommended)" to the first), description from `detail` — you may append a short session-informed rationale to a description, and you may reorder these three when session context clearly changes the priority (say why in the description).
+   - **Triage swap:** if an area's pending files are plainly non-architectural (generated code, fixtures, one-off scripts), replace the third slot with **Waive non-architectural files** — on selection, propose the exact `coverage.ignore` globs via AskUserQuestion (user adjusts via Other), append the confirmed globs to `coverage.ignore` in `.contextdx/config.json`, re-run `cdx-prepass.js --coverage`, print the new `display` verbatim, and re-ask.
+   - Always last: **Sync what I have** — description: "Stop analysing; push the boards + this coverage snapshot to the platform."
+4. If the user picks a recommendation, run another incremental pass scoped to it, then **return to Step 8.5** (refresh, dashboard, ask again — the loop ends when the user syncs or nothing is left):
+   - `stale-board` → re-analyze that board's `staleNodes[].changedFiles` (Steps 5–8 scoped to those files)
+   - `pending-area` → analyze the pending files under its `path` (take them from the ledger's `pendingFiles`) and place the resulting nodes on the board that owns that scope (L0, or the matching drill-down board)
+   - `unknown-board` → re-run that board with the `--clean` behaviour (delete its JSON + store, full re-analysis)
+5. If the user picks **Sync what I have**: proceed to Step 9 and end the final report with: `Run /sync to push the boards and this coverage snapshot.`
 
 ### Step 9: Update Manifest
 
@@ -422,6 +441,7 @@ Report summary after analysis:
 - Number of nodes by archetype (total, and how many new/updated/removed if incremental)
 - Number of relationships by type
 - Drill-down candidates identified
-- Coverage: the Step 8.5 `display` markdown, verbatim
+- Coverage: the **final** Step 8.5 `display` markdown, verbatim (if Step 8.6 looped, one dashboard — the last — not one per pass)
+- Which next-area choices the user made, if any passes looped
 - Location of output file
 - Suggest running `/sync` to push to ContextDX
