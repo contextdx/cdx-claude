@@ -7,13 +7,13 @@
   },
   "metadata": {
     "description": "ContextDX plugins for codebase and knowledge architecture analysis, visualization, and sync to ContextDX Portal.",
-    "version": "0.6.18"
+    "version": "0.6.19"
   },
   "plugins": [
     {
       "name": "cdx-code",
       "displayName": "Cdx Code",
-      "version": "0.6.18",
+      "version": "0.6.19",
       "source": "./plugins/claude/cdx-code",
       "description": "Real-time codebase architecture analysis and visualization for ContextDX Portal. Analyzes codebases across multiple languages, detects tech stacks, identifies component relationships, and syncs to ContextDX for collaborative architecture boards. Supports server-defined insight analysis skills.",
       "author": {
@@ -42,7 +42,7 @@
     {
       "name": "cdx-work",
       "displayName": "Cdx Work",
-      "version": "0.6.18",
+      "version": "0.6.19",
       "source": "./plugins/claude/cdx-work",
       "description": "Knowledge and document architecture analysis for ContextDX Portal. Analyzes a document/knowledge set — specs, RFCs, policies, design docs, wikis — into a graph of concepts, documents, decisions, and their relationships, and syncs to ContextDX for collaborative knowledge boards. Tuned for Claude Cowork. Supports server-defined insight analysis skills.",
       "author": {

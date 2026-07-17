@@ -151,7 +151,7 @@ For each synced board, report:
 
 **Coverage** (the last CLI output may carry a `coverageReport` field — absent means the domain doesn't track coverage; skip silently):
 
-- `sent: true` → print `📊 Coverage snapshot sent — <percent>% analysed, <pending> pending, <staleNodes> stale node(s).` If `pending > 0` or `staleNodes > 0`, add: `Close the gap with /analyze-docs (incremental).`
+- `sent: true` → print `📊 Coverage snapshot sent — <percent>% analysed, <pending> pending, <staleNodes> stale node(s).` (when `mappedOnly > 0`, insert `<mappedOnly> mapped awaiting drill-down` after the percent; when `percent` is `null`, say `coverage not yet measurable` instead of a percent). If `pending > 0`, `mappedOnly > 0`, or `staleNodes > 0`, add: `Close the gap with /analyze-docs (incremental).`
 - `reason: "no_ledger"` → `No coverage ledger yet — run /analyze-docs (it computes coverage) so the platform can track analysis coverage.`
 - `reason: "feature_unavailable"` → "This ContextDX server doesn't expose analysis coverage yet — ask your admin to upgrade"
 - `reason: "branch_mismatch"` → note the snapshot was skipped because the ledger was computed on the wrong branch; `/status` explains the recovery.

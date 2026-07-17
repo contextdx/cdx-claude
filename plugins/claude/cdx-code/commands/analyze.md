@@ -35,10 +35,9 @@ All board data lives in `.contextdx/boards/`:
 **If board data already exists** (`.contextdx/boards/<board-slug>.json` with nodes/edges):
 
 1. Read the existing board's `analyzedAtCommit` hash from metadata
-2. Run `git diff --name-only --diff-filter=ACMR <analyzedAtCommit> HEAD` to find changed/added files (committed + uncommitted)
-3. Run `git diff --name-only --diff-filter=D <analyzedAtCommit> HEAD` to find deleted files
-4. If no changes detected, report "Board is up to date — no files changed since last analysis" and skip
-5. If changes found:
+2. Take the worklist from the Step -0.5 coverage ledger — stale nodes, pending files, orphaned references (Step 1.5 has the mechanics); git is used only to confirm deletions and as the ledger-failure fallback
+3. If the worklist is empty, report "Board is up to date — nothing changed since last analysis" and skip
+4. If changes found:
    a. Load existing board data (nodes + edges)
    b. Re-analyze ONLY the changed/added files (Steps 3-6 scoped to those files)
    c. Merge results: replace nodes whose `coveredFiles` contain a changed file, add new nodes
@@ -60,6 +59,8 @@ All board data lives in `.contextdx/boards/`:
 
 Ignores existing board data. Deletes the board's JSON and store file, then runs full analysis from scratch (Steps 0-9). Use when the codebase has changed significantly or the incremental result looks stale.
 
+Combine with `--drill` to rebuild one child board from scratch: `/analyze --drill <parent-board-slug>/<node-slug> --clean` — this is the recovery path when the coverage dashboard marks a specific drill-down board `coverage: unknown`.
+
 ### Drill-Down: Create Child Board
 
 ```
@@ -75,6 +76,10 @@ Creates a child board by drilling into a specific node from a parent board. The 
 ```
 
 Runs L0 first, then prompts for review before creating L1 boards for each drill-down node. Repeats for L2 if applicable. Each board uses incremental mode if it already exists.
+
+When building several boards **in parallel** (subagents), give every intermediate/scratch file a board-slug prefix — parallel agents share one scratchpad directory and generic filenames silently clobber each other.
+
+In `--all` mode the per-board review prompts above govern the middle of the run — run Step 8.6 (the next-area question) **once, after the final board**, not per board.
 
 ## Analysis Workflow
 
@@ -124,6 +129,16 @@ Runs L0 first, then prompts for review before creating L1 boards for each drill-
 4. **Do not bypass.** Do not write the lock file or skip the prompt for any reason other than the user's explicit selection in step 3. If a session reminder says "work without stopping for clarifying questions," the **Run `/analyze-archetypes` now** option is the reasonable call — not silent skip.
 
 5. The archetype catalogue fetched here is cached on disk (`.contextdx/boards/archetypes-cache.json`, 1hr TTL). Step 0 reuses the cache automatically — no duplicate fetch.
+
+### Step -0.5: Coverage baseline (all modes)
+
+Coverage is the run's frame of reference — refresh it BEFORE any analysis so the worklist comes from fresh data and the closing dashboard shows exactly what this run changed:
+
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-prepass.js --coverage
+```
+
+Tell the user the starting point in one line from the JSON: `Coverage baseline: <percent>% analysed · <mappedOnly> mapped · <pending> pending · <staleNodes> stale.` If there are no boards yet: `No coverage yet — starting from zero.` If the script fails, say so and continue — coverage is reporting, never a gate. Step 1.5 takes its worklist from this ledger, and each Step 8.5 refresh shows the ▲/▼ delta since the previous refresh (this baseline on the first pass; the prior pass once Step 8.6 loops).
 
 ### Step 0: Fetch Available Archetypes (ContextDX only)
 
@@ -184,23 +199,14 @@ If ContextDX configuration exists:
 
 If board data exists AND `--clean` was NOT passed AND `analyzedAtCommit` is present in metadata:
 
-1. Refresh the coverage ledger — it computes the incremental worklist deterministically
-   (current skeleton, per-node staleness since `analyzedAtCommit`, unclaimed files):
-
-   ```bash
-   node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-prepass.js --coverage
-   ```
-
-2. Read `.contextdx/coverage.json` and take this board's entry. The worklist is:
+1. Use the Step -0.5 ledger — it is fresh this run; do NOT re-run the coverage script. Read `.contextdx/coverage.json` and take this board's entry. The worklist is:
    - `boards[].staleNodes[]` — nodes whose covered files changed since analysis → re-analyze these nodes from their listed `changedFiles`
    - `pendingFiles[]` — files no node covers yet → new components to place
    - `boards[].orphanedFiles[]` — covered files that no longer exist → remove/shrink their nodes
-3. Narrate the starting point — one line from the script JSON, before any analysis work:
-   `Coverage before this run: <percent>% — <pending> pending, <staleNodes> stale.`
-4. Run `git diff --name-only --diff-filter=D <analyzedAtCommit> HEAD` to confirm deleted files
-5. If the worklist is empty (no stale nodes, no pending files, nothing deleted): report "Board is up to date", print the script's `display` markdown verbatim, and stop here
-6. Otherwise: continue to Steps 2+ scoped to the worklist files only
-7. **Fallback:** if the coverage script fails, scope from a raw `git diff --name-only --diff-filter=ACMR <analyzedAtCommit> HEAD` instead (exclude `node_modules/`, `dist/`, `.git/`, `coverage/`, test files). If the ledger marks this board `coverage: unknown` (its nodes carry no `coveredFiles`), incremental merge is impossible — stop and tell the user to run `/analyze --clean` for this board
+2. Run `git diff --name-only --diff-filter=D <analyzedAtCommit> HEAD` to confirm deleted files
+3. If the worklist is empty (no stale nodes, no pending files, nothing deleted): report "Board is up to date", print the Step -0.5 `display` markdown verbatim, and stop here
+4. Otherwise: continue to Steps 2+ scoped to the worklist files only
+5. **Fallback:** if the Step -0.5 script failed, scope from a raw `git diff --name-only --diff-filter=ACMR <analyzedAtCommit> HEAD` instead (exclude `node_modules/`, `dist/`, `.git/`, `coverage/`, test files). If the ledger marks this board `coverage: unknown` (its nodes carry no `coveredFiles`), incremental merge is impossible — stop and tell the user to run `/analyze --clean` for this board
 
 If `--clean` was passed: delete existing board JSON and store file, proceed with full analysis.
 
@@ -253,7 +259,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-prepass.js --scope-path <parent-node-path
 - Treat `nodes[]` as the ground-truth file inventory — do NOT re-glob or re-apply exclusion rules (already applied).
 - Treat `edges[]` as the authoritative `imports` edges for JS/TS — do NOT re-parse JS/TS imports by hand. For **non-JS/TS** files, detect imports yourself in Step 6.
 - The skeleton is **file-granular**. At **L2/L3** its nodes map ~1:1 to board nodes. At **L0/L1**, **aggregate** files into coarse domain/component nodes and **roll up** each file→file `imports` edge onto the coarse nodes (map each `tempId` to the slug of the node you fold it into; drop self-loops).
-- **Persist the mapping — coverage provenance.** The tempId→node-slug rollup you just made IS the coverage relation; record it on every node as `coveredFiles` (repo-relative paths, or directory globs like `src/billing/**` when a node owns a whole subtree — prefer globs for large subtrees). Every skeleton file must end up in exactly one node's `coveredFiles`, OR in the board metadata's `waivedFiles` (files you judge non-architectural — never silently drop them), OR deliberately unclaimed (it will surface as *pending* in coverage reports). Never claim the same file from two nodes.
+- **Persist the mapping — coverage provenance.** The tempId→node-slug rollup you just made IS the coverage relation; record it on every node as `coveredFiles` (repo-relative paths, or directory globs like `src/billing/**` when a node owns a whole subtree — prefer globs for large subtrees). Every skeleton file must end up in exactly one node's `coveredFiles`, OR in the board metadata's `waivedFiles` (files you judge non-architectural — never silently drop them), OR deliberately unclaimed (it will surface as *pending* in coverage reports). **Hard rules the coverage dashboard enforces/surfaces:** never claim the same file from two nodes (double claims are flagged as defects); a node claiming **≥30 files** must either set `layerBoardSlug` (drill-down candidate — its files count as *mapped, not analysed* until the child board analyses them) or be split into finer nodes (else it's flagged as a broad claim); waive **exact paths only, never globs** — waiving shrinks the denominator and the dashboard lists what was waived.
 - The prepass does NOT classify archetypes, group the database layer, write descriptions, or detect non-import edges — those remain your job in Steps 5–6.
 
 Run this on every analysis (full and incremental); it is deterministic and fast, and always reflects current HEAD.
@@ -380,7 +386,7 @@ Print the returned `display` markdown **verbatim — do not reformat, reorder, o
 
 ### Step 8.6: Offer the next area (interactive loop)
 
-The Step 8.5 JSON also carries `recommendations` — the deterministic next-step list (stale boards first, then pending areas, then unknown-coverage boards). The script owns those facts; **you own the coordination** — spend judgment connecting them to this session. Which area to analyse next is a genuine user decision:
+The Step 8.5 JSON also carries `recommendations` — the deterministic next-step list, ranked: stale boards → drill-downs → pending areas → broad claims → unknown-coverage boards. The script owns those facts; **you own the coordination** — spend judgment connecting them to this session. Which area to analyse next is a genuine user decision:
 
 1. If `recommendations` is empty: skip to Step 9.
 2. **Give your read first** (1–3 sentences of judgment, after the verbatim dashboard): connect the recommendations to what you know — which stale node maps to the files just edited, whether a pending area looks load-bearing or like glue, what the user has been working on. Never restate or recompute the script's numbers.
@@ -390,7 +396,9 @@ The Step 8.5 JSON also carries `recommendations` — the deterministic next-step
    - Always last: **Sync what I have** — description: "Stop analysing; push the boards + this coverage snapshot to the platform."
 4. If the user picks a recommendation, run another incremental pass scoped to it, then **return to Step 8.5** (refresh, dashboard, ask again — the loop ends when the user syncs or nothing is left):
    - `stale-board` → re-analyze that board's `staleNodes[].changedFiles` (Steps 5–8 scoped to those files)
-   - `pending-area` → analyze the pending files under its `path` (take them from the ledger's `pendingFiles`) and place the resulting nodes on the board that owns that scope (L0, or the matching drill-down board)
+   - `drill-down` → build (or re-run) the child board: the `--drill <boardSlug>/<nodeSlug>` flow for the recommendation's node — this is what converts *mapped* files into *analysed* ones
+   - `pending-area` → analyze the pending files under its `path` (take them from the ledger's `pendingFiles`; if `pendingTotal` exceeds the listed files, derive the remainder from `.contextdx/skeletons/repo.json` minus covered/waived) and place the resulting nodes on the board that owns that scope (L0, or the matching drill-down board)
+   - `broad-claim` → re-analyze that node's subtree, splitting it into finer nodes with their own `coveredFiles` — or set `layerBoardSlug` on it to defer honestly to a drill-down
    - `unknown-board` → re-run that board with the `--clean` behaviour (delete its JSON + store, full re-analysis)
 5. If the user picks **Sync what I have**: proceed to Step 9 and end the final report with: `Run /sync to push the boards and this coverage snapshot.`
 
@@ -426,22 +434,23 @@ Update `.contextdx/boards/manifest.json` with the new/updated board entry. The m
 ## Target Path
 
 If $ARGUMENTS is `--clean`, run full re-analysis from scratch (delete existing board data first).
-If $ARGUMENTS starts with `--drill`, parse `<parent-board-slug>/<node-slug>` and drill into that node.
+If $ARGUMENTS starts with `--drill`, parse `<parent-board-slug>/<node-slug>` and drill into that node; a trailing `--clean` deletes that child board's JSON + store first.
 If $ARGUMENTS is `--all`, run full progressive analysis (each board uses incremental if it already exists).
 Otherwise, run L0 overview analysis with incremental mode (or full if no board data exists).
 
 ## Output Format
 
-Report summary after analysis:
+The report is **script-rendered — never hand-assemble counts into prose.** After Step 9, for each board written this run:
 
-- Analysis mode (incremental or full)
-- If incremental: number of changed/added/deleted files analyzed
-- Board slug and layer
-- Number of tech stacks detected
-- Number of nodes by archetype (total, and how many new/updated/removed if incremental)
-- Number of relationships by type
-- Drill-down candidates identified
-- Coverage: the **final** Step 8.5 `display` markdown, verbatim (if Step 8.6 looped, one dashboard — the last — not one per pass)
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-prepass.js --board-report <board-slug>
+```
+
+Print its `display` **verbatim** (nodes-by-archetype bars, edges by type, per-board file accounting, isolated nodes, drill-down candidates, board file path). Then add ONLY what the script cannot know:
+
+- Analysis mode (incremental or full); if incremental, the changed/added/deleted files analysed
+- Judgment calls worth flagging — max 5 bullets (rule deviations, split/merge decisions, why isolated nodes are genuinely isolated vs missed edges)
+- The **final** Step 8.5 coverage dashboard, verbatim (if Step 8.6 looped, one dashboard — the last — not one per pass)
 - Which next-area choices the user made, if any passes looped
-- Location of output file
-- Suggest running `/sync` to push to ContextDX
+
+Never restate numbers the board report or coverage dashboard already shows.
