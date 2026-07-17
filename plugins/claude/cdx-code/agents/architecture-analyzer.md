@@ -59,7 +59,7 @@ The agent runs in one of two modes, chosen by the calling command. The classific
         "description": "AWS Lambda function — serverless compute unit invoked by events or HTTP.",
         "detectionRules": "Files declaring `new lambda.Function(...)` or matching `*-handler.ts` in `/lambdas/`.",
         "exampleNodeSlugs": ["user-signup-handler", "image-resize-worker"],
-        "sourceContext": { "boardSlug": "<root-board-slug>", "proposedBy": "cdx-code-plugin" }
+        "sourceContext": { "boardSlug": "<root-board-slug>" }
       }
     ],
     "improvements": [
@@ -69,7 +69,7 @@ The agent runs in one of two modes, chosen by the calling command. The classific
         "rationale": "12 components classified as `service` split into 7 HTTP-facing and 5 background workers.",
         "splitInto": [ /* per ArchetypeProposalPayloadSchema */ ],
         "affectedNodeSlugs": ["..."],
-        "sourceContext": { "boardSlug": "<root-board-slug>", "proposedBy": "cdx-code-plugin" }
+        "sourceContext": { "boardSlug": "<root-board-slug>" }
       }
     ]
   }

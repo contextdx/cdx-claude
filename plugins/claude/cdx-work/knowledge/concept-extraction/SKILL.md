@@ -117,7 +117,7 @@ These all fail review:
   "description": "An operational procedure — ordered steps to accomplish or recover a task, with prerequisites.",
   "detectionRules": "Files under `/runbooks/` or `/how-to/`, or documents with 'Prerequisites' + ordered imperative steps.",
   "exampleNodeSlugs": ["deploy-process", "incident-response", "db-failover"],
-  "sourceContext": { "boardSlug": "overview", "proposedBy": "cdx-work-plugin" }
+  "sourceContext": { "boardSlug": "overview" }
 }
 ```
 
@@ -135,7 +135,7 @@ Why it passes: ≥2 nodes; clear role (operational procedure); a one-sentence de
     { "name": "runbook", "description": "An operational procedure with ordered steps and prerequisites.", "visualPrimitiveType": "node" }
   ],
   "affectedNodeSlugs": ["auth-spec", "export-spec", "…", "deploy-process", "incident-response", "…"],
-  "sourceContext": { "boardSlug": "overview", "proposedBy": "cdx-work-plugin" }
+  "sourceContext": { "boardSlug": "overview" }
 }
 ```
 

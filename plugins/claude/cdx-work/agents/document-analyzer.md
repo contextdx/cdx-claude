@@ -59,7 +59,7 @@ The agent runs in one of two modes, chosen by the calling command. The classific
         "description": "A dated record of a discussion and its action items — captures decisions in flight before they become formal.",
         "detectionRules": "Files under `/notes/` or `/meetings/`, front-matter with `date:` + `attendees:`, or headings matching `## Action Items`.",
         "exampleNodeSlugs": ["2026-05-arch-sync", "2026-05-security-review"],
-        "sourceContext": { "boardSlug": "<root-board-slug>", "proposedBy": "cdx-work-plugin" }
+        "sourceContext": { "boardSlug": "<root-board-slug>" }
       }
     ],
     "improvements": [
@@ -69,7 +69,7 @@ The agent runs in one of two modes, chosen by the calling command. The classific
         "rationale": "30 nodes typed `Document` split cleanly into normative specs and operational runbooks — they read and are owned very differently.",
         "splitInto": [ /* per ArchetypeProposalPayloadSchema */ ],
         "affectedNodeSlugs": ["..."],
-        "sourceContext": { "boardSlug": "<root-board-slug>", "proposedBy": "cdx-work-plugin" }
+        "sourceContext": { "boardSlug": "<root-board-slug>" }
       }
     ]
   }

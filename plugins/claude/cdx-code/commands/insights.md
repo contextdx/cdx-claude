@@ -14,7 +14,7 @@ Run server-defined insight analysis skills against your architecture board. The 
 Before doing anything else, validate that configuration and board data exist. Read the boardSlug from `.contextdx/config.json` (`boardSlug` field) — this is the **primary board** but insights can target any layer board. Also read `.contextdx/boards/manifest.json` (if it exists) to discover available layer boards for cross-board analysis. Then run:
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-insights.js --list-insight-skills --board-slug <boardSlug>
+node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-insights.js --list-insight-skills --board-slug <boardSlug> --kind code
 ```
 
 Check the exit code and JSON output:

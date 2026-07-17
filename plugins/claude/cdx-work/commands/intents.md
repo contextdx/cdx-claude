@@ -118,7 +118,7 @@ Use your own tools (Read, Glob, Grep, Edit, Write, Bash) to make the change in t
 
 ### Step 6: Verify and record the evidence
 
-**Mandatory before any `implemented` resolution — and mechanically enforced:** the resolve refuses without fresh passing evidence.
+**Mandatory before any `implemented` resolution:** the CLI refuses `--resolve --kind implemented` without fresh recorded evidence. The evidence is what *you* record — the server does not re-run your checks — so run the checks for real and record their true exit codes. Recording a check you didn't run, or a passing exit code for a failing check, defeats the whole loop.
 
 1. Discover what the project uses: `package.json` scripts (`test`, `typecheck`, `lint`, `build`), `Makefile`, `pyproject.toml`, `Cargo.toml`, CI config — whatever this project verifies with
 2. Run the relevant checks (at minimum the type/compile check and the tests nearest the changed code)
@@ -184,7 +184,7 @@ A `--note` is effectively required for both — it's the only feedback the archi
 - **No gap review, no edits.** Always run Step 4.5 before touching a file; a `blocking` gap goes to the user, never silently forced through.
 - **Never `--clarify` without a user-approved note.** The bounce-back note is the only thing the architect receives — draft it, show it, get a yes, then send.
 - **Claim before implementing**; the server refuses `implemented` on unclaimed intents.
-- **No verify, no `implemented`.** Enforced: `--resolve --kind implemented` is refused without fresh passing `--record-verify` evidence. If no checks exist in the project, record the closest honest signal (e.g. a build) and tell the user.
+- **No verify, no `implemented`.** The CLI refuses `--resolve --kind implemented` without fresh passing `--record-verify` evidence. That evidence is self-recorded — run the checks for real and record honest exit codes; never record a check you didn't run. If no checks exist in the project, record the closest honest signal (e.g. a build) and tell the user.
 
 ## Connect-now offer
 

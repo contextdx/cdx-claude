@@ -64,7 +64,7 @@ These all fail review:
   "description": "A runtime toggle that gates code paths. Read at request-time from a flag service or env config; controls feature rollout.",
   "detectionRules": "Imports from `unleash-client`, `launchdarkly-node-server-sdk`, `@growthbook/growthbook`, or local `flags.ts` with `FlagKey` enum.",
   "exampleNodeSlugs": ["billing-flags", "experiments-runtime"],
-  "sourceContext": { "boardSlug": "overview", "proposedBy": "cdx-code-plugin" }
+  "sourceContext": { "boardSlug": "overview" }
 }
 ```
 
@@ -99,7 +99,7 @@ Why it passes:
     "email-worker", "invoice-worker", "image-resize-worker",
     "cleanup-worker", "report-scheduler"
   ],
-  "sourceContext": { "boardSlug": "overview", "proposedBy": "cdx-code-plugin" }
+  "sourceContext": { "boardSlug": "overview" }
 }
 ```
 
