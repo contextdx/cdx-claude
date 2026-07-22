@@ -354,12 +354,20 @@ Build the `PushInsightsCommand` JSON. Every reference inside `insights`/`paths`/
   "content": "<markdown report>",
   "title": "<skill.name> — <date>",
   "description": "<summary line>",
+  "tags": ["risk:security-review", "area:auth"],
   "info": "<one-line audit summary of what this analysis surfaced, ≤350 chars>"
 }
 ```
 
+Before assembling, pull the org's ContextTag vocabulary so you tag with names the org actually uses:
+
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-context-tags.js
+```
+
 Note:
 - `insights.scope` is **required**. `insights.insights`, `insights.paths`, `insights.suggestions` are all optional — include only what the analysis produces.
+- **`tags`** — curated ContextTag names classifying the **whole** insight (risk area, domain, lifecycle). Copy names **verbatim** from `cdx-context-tags.js` output (`tagNames`); the server **drops** any name not in the vocabulary, so never invent one. Optional — omit or use `[]` when none fit. This is distinct from the per-finding `tags` inside each ElementInsight, which are free-text keywords.
 - Do not set `insights.name` — the data layer fills it from the parent record's title at render time.
 - `info` is a short (≤ 350 char) human-readable line describing **what this run surfaced** — e.g. `"3 auth risks incl. a hardcoded JWT secret; missing rate-limit on the payment path"`. It is stored on the push's audit thread so the pushed insight is traceable back to this analysis run and its source binding. Be specific and concrete; if omitted, the CLI falls back to a generic `Insights: <skill> → <board>` label.
 

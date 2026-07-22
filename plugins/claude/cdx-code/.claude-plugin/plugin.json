@@ -20,7 +20,7 @@
     "./commands/update.md"
   ],
   "displayName": "Cdx Code",
-  "version": "0.6.19",
+  "version": "0.6.20",
   "description": "Real-time codebase architecture analysis and visualization for ContextDX Portal. Analyzes codebases across multiple languages, detects tech stacks, identifies component relationships, and syncs to ContextDX for collaborative architecture boards. Supports server-defined insight analysis skills.",
   "author": {
     "name": "ContextDx",

@@ -44,6 +44,17 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-insights.js [mode] [options]
 
 **Exit codes:** 0=success, 1=config error, 2=board data error (missing/empty/corrupt), 3=API/build error
 
+### cdx-context-tags.js — ContextTag Vocabulary
+
+Fetches the org's curated ContextTag vocabulary (1-hour TTL cache). Pull it during analysis so you can classify findings with tags the org actually uses — the `name` values are what you put in the insight payload's `tags` array, and the server **rejects any name not in this list**.
+
+**Invocation:**
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/cdx-context-tags.js [--no-cache]
+```
+
+**Output:** JSON with `tags` (`{name, category, description}[]`) and `tagNames` (`string[]`). Copy the relevant `name` values verbatim into the payload's `tags` field.
+
 ## Configuration Source
 
 Scripts read configuration from `.contextdx/config.json`.
